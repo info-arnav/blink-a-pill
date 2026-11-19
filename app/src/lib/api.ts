@@ -1,4 +1,3 @@
-import { Platform } from 'react-native';
 import { getItem, removeItem, setItem } from './storage';
 
 export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://link-a-pill.unlocalhost.tech';
@@ -61,25 +60,8 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
   return parse<T>(response);
 }
 
-export async function upload<T>(path: string, file: { uri: string; name: string; type: string }): Promise<T> {
-  const form = new FormData();
-  if (Platform.OS === 'web') {
-    const blob = await (await fetch(file.uri)).blob();
-    form.append('photo', new File([blob], file.name, { type: file.type }));
-  } else {
-    form.append('photo', file as unknown as Blob);
-  }
-  let response: Response;
-  try {
-    response = await fetch(`${API_URL}${path}`, {
-      method: 'POST',
-      headers: token ? { authorization: `Bearer ${token}` } : {},
-      body: form,
-    });
-  } catch {
-    throw new ApiError('OFFLINE', 'No internet connection. Please try again.', 0);
-  }
-  return parse<T>(response);
+export async function sendPhoto<T>(path: string, photo: { data: string; mime_type: string }): Promise<T> {
+  return api<T>(path, { method: 'POST', body: photo });
 }
 
 export function errorMessage(err: unknown): string {

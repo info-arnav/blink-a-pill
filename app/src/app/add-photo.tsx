@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Image, View } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { api, errorMessage, upload } from '@/lib/api';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import { api, errorMessage, sendPhoto } from '@/lib/api';
 import { usePatient } from '@/lib/session';
 import type { Capture, Flag, Medication } from '@/lib/types';
 import { MedicineEditor, draftReady, draftToBody, type Draft } from '@/features/medicine-editor';
@@ -39,7 +40,7 @@ export default function AddPhoto() {
 
   const pick = async (source: 'camera' | 'library') => {
     setError(null);
-    const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.6 };
+    const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.8 };
     let result: ImagePicker.ImagePickerResult;
     if (source === 'camera') {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -61,7 +62,12 @@ export default function AddPhoto() {
     setPhoto(asset.uri);
     setReading(true);
     try {
-      const read = await upload<Capture>(`/v1/patients/${patient.id}/capture`, { uri: asset.uri, name: asset.fileName ?? 'prescription.jpg', type: asset.mimeType ?? 'image/jpeg' });
+      const longest = Math.max(asset.width, asset.height);
+      const context = ImageManipulator.manipulate(asset.uri);
+      if (longest > 1800) context.resize(asset.width >= asset.height ? { width: 1800 } : { height: 1800 });
+      const image = await (await context.renderAsync()).saveAsync({ compress: 0.75, format: SaveFormat.JPEG, base64: true });
+      if (!image.base64) throw new Error('Could not prepare the photo. Try again.');
+      const read = await sendPhoto<Capture>(`/v1/patients/${patient.id}/capture`, { data: image.base64, mime_type: 'image/jpeg' });
       setCapture(read);
       setDrafts(read.items.map(toDraft));
       setDoctor({ name: read.doctor?.name ?? '', phone: read.doctor?.phone ?? '' });

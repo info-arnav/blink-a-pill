@@ -15,6 +15,7 @@ app.get('/ready', (_req, res) => res.status(200).json({ ok: true }));
 
 app.use(helmet());
 if (env.corsOrigins.length) app.use(cors({ origin: env.corsOrigins, maxAge: 600 }));
+app.use('/v1/patients/:patientId/capture', express.json({ limit: '12mb' }));
 app.use(express.json({ limit: '200kb' }));
 app.use(requestContext);
 app.use((_req, res, next) => {

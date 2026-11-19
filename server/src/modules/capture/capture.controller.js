@@ -1,7 +1,6 @@
-const { AppError } = require('#lib/app-error');
 const service = require('./capture.service');
 
 exports.read = async (req, res) => {
-  if (!req.file) throw new AppError('PHOTO_REQUIRED', 'Attach a photo', 422);
-  res.success(await service.readPhoto(req.file));
+  const { data, mime_type: mimeType } = req.input.body;
+  res.success(await service.readPhoto({ mimetype: mimeType, buffer: Buffer.from(data, 'base64') }));
 };
