@@ -1,1 +1,1 @@
-export { ReceptionPage as default } from '@/views/reception';
+export { ReceptionPage as default, metadata } from '@/views/reception';

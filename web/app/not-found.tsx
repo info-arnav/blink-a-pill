@@ -1,9 +1,13 @@
-import { Notice, Shell } from '@/shared/ui/primitives';
+import { Page, PageTitle } from '@/shared/ui/layout/Page';
+import { LinkButton } from '@/shared/ui/action/Button';
 
 export default function NotFound() {
   return (
-    <Shell>
-      <Notice tone="error">This page does not exist. Check the link you were sent.</Notice>
-    </Shell>
+    <Page>
+      <PageTitle overline="404" title="This page does not exist" description="The link may have expired or been mistyped. Nothing about anyone’s medicines has changed." />
+      <div>
+        <LinkButton href="/">Go to blink-a-pill</LinkButton>
+      </div>
+    </Page>
   );
 }

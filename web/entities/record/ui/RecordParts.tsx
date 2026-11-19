@@ -1,68 +1,92 @@
-import { Badge, Card, severityTone } from '@/shared/ui/primitives';
+import { Badge, severityTone } from '@/shared/ui/status/Badge';
+import { Row, RowList, Mono } from '@/shared/ui/data/Row';
 import { formatDate, formatDateTime, genderLabel } from '@/shared/lib/format';
-import type { Flag, Lab, Medication, PatientSummary, FlagEvent } from '../model/types';
+import type { Flag, FlagEvent, Lab, Medication, PatientSummary } from '../model/types';
 import styles from './record.module.css';
 
-export function PatientLine({ patient }: { patient: PatientSummary }) {
+const SOURCE = { photo: 'Prescription photo', manual: 'Typed in', abha: 'ABHA record' } as const;
+
+export function patientLine(p: PatientSummary) {
+  return [`${p.age} years`, genderLabel(p.gender), p.weight_kg ? `${p.weight_kg} kg` : null].filter(Boolean).join(' · ');
+}
+
+export function PatientFacts({ patient, conditions }: { patient: PatientSummary; conditions?: { name: string }[] }) {
   return (
-    <div className={styles.patient}>
-      <span className={styles.patientName}>{patient.full_name}</span>
-      <span className={styles.patientMeta}>
-        {patient.age} years · {genderLabel(patient.gender)}
-        {patient.weight_kg ? ` · ${patient.weight_kg} kg` : ''}
-        {patient.abha_address ? ` · ABHA ${patient.abha_address}` : ''}
-      </span>
-    </div>
+    <dl className={styles.facts}>
+      <div>
+        <dt>Patient</dt>
+        <dd>{patient.full_name}</dd>
+      </div>
+      <div>
+        <dt>Age and sex</dt>
+        <dd>{patientLine(patient)}</dd>
+      </div>
+      {conditions?.length ? (
+        <div>
+          <dt>Conditions</dt>
+          <dd>{conditions.map((c) => c.name).join(', ')}</dd>
+        </div>
+      ) : null}
+      {patient.abha_address ? (
+        <div>
+          <dt>ABHA</dt>
+          <dd>
+            <Mono>{patient.abha_address}</Mono>
+          </dd>
+        </div>
+      ) : null}
+    </dl>
   );
 }
 
-const SOURCE = { photo: 'From a prescription photo', manual: 'Typed in', abha: 'From ABHA records' } as const;
+function composition(m: Medication) {
+  if (!m.ingredients.length) return 'Contents unknown, not screened';
+  return m.ingredients.map((i) => `${i.display}${i.value ? ` ${i.value} ${i.unit ?? ''}`.trimEnd() : ''}`).join(' + ');
+}
 
-export function MedicationList({ medications, flagged = [] }: { medications: Medication[]; flagged?: string[] }) {
-  if (!medications.length) return <p className={styles.muted}>No current medicines on the list.</p>;
+function schedule(m: Medication) {
+  const parts = [`${m.dose_amount} ${m.dose_unit}`, m.frequency_label.toLowerCase()];
+  if (m.times.length) parts.push(m.times.join(', '));
+  if (m.meal !== 'any') parts.push(`${m.meal} food`);
+  if (m.end_date) parts.push(`until ${formatDate(m.end_date)}`);
+  return parts.join(' · ');
+}
+
+export function MedicationRows({ medications, flagged = [] }: { medications: Medication[]; flagged?: string[] }) {
+  if (!medications.length) return <p className={styles.empty}>No current medicines on the list.</p>;
   return (
-    <ul className={styles.list}>
+    <RowList>
       {medications.map((m) => (
-        <li key={m.id} className={`${styles.med} ${flagged.includes(m.id) ? styles.medFlagged : ''}`}>
-          <span className={styles.medName}>{m.name}</span>
-          {flagged.includes(m.id) ? <Badge tone="sev1">In this concern</Badge> : <span />}
-          <span className={styles.composition}>
-            {m.ingredients.length
-              ? m.ingredients.map((i) => `${i.display}${i.value ? ` ${i.value} ${i.unit ?? ''}` : ''}`).join(' + ')
-              : 'Contents unknown, not screened'}
-          </span>
-          <span className={styles.medMeta}>
-            {m.dose_amount} {m.dose_unit} · {m.frequency_label}
-            {m.times.length ? ` (${m.times.join(', ')})` : ''}
-            {m.meal !== 'any' ? ` · ${m.meal} food` : ''}
-            {m.end_date ? ` · until ${formatDate(m.end_date)}` : ''}
-          </span>
-          <span className={styles.medSource}>
-            {m.prescriber ? `Prescribed by ${m.prescriber.name}${m.prescriber.speciality ? ` (${m.prescriber.speciality})` : ''}` : 'Prescriber not recorded'}
-            {m.prescribed_on ? ` on ${formatDate(m.prescribed_on)}` : ''} · {SOURCE[m.source]} · Confirmed by: {m.confirmed_by}
-          </span>
-        </li>
+        <Row
+          key={m.id}
+          marked={flagged.includes(m.id)}
+          title={m.name}
+          meta={`${composition(m)} · ${schedule(m)}`}
+          detail={`${m.prescriber ? `${m.prescriber.name}${m.prescriber.speciality ? `, ${m.prescriber.speciality}` : ''}` : 'Prescriber not recorded'}${m.prescribed_on ? `, ${formatDate(m.prescribed_on)}` : ''} · ${SOURCE[m.source]} · Confirmed by ${m.confirmed_by}`}
+          status={flagged.includes(m.id) ? <Badge tone="danger">In question</Badge> : m.is_antibiotic ? <Badge tone="accent">Antibiotic</Badge> : undefined}
+        />
       ))}
-    </ul>
+    </RowList>
   );
 }
 
-export function LabGrid({ labs }: { labs: Lab[] }) {
-  if (!labs.length) return <p className={styles.muted}>No lab values recorded.</p>;
+export function LabFacts({ labs }: { labs: Lab[] }) {
+  if (!labs.length) return <p className={styles.empty}>No test results recorded.</p>;
   return (
-    <div className={styles.labs}>
+    <dl className={styles.labs}>
       {labs.map((l) => (
-        <div key={l.id} className={styles.lab}>
-          <div className={styles.labValue}>
-            {l.value ?? l.value_text} <span className={styles.muted}>{l.kind === 'child_pugh' ? '' : l.unit}</span>
-          </div>
-          <div className={styles.labLabel}>{l.label}</div>
-          <div className={styles.muted}>
-            {formatDate(l.measured_on)} · {l.source === 'computed' ? 'calculated' : l.source === 'abha' ? 'ABHA' : 'typed by patient'}
-          </div>
+        <div key={l.id}>
+          <dt>{l.label}</dt>
+          <dd>
+            <span className={styles.labValue}>{l.value ?? l.value_text}</span>
+            {l.kind !== 'child_pugh' && l.unit ? <span className={styles.labUnit}>{l.unit}</span> : null}
+          </dd>
+          <dd className={styles.labMeta}>
+            {formatDate(l.measured_on)} · {l.source === 'computed' ? 'calculated (CKD-EPI 2021)' : l.source === 'abha' ? 'ABHA' : 'typed by patient'}
+          </dd>
         </div>
       ))}
-    </div>
+    </dl>
   );
 }
 
@@ -70,73 +94,77 @@ export function Timeline({ events }: { events: FlagEvent[] }) {
   return (
     <ol className={styles.timeline}>
       {events.map((e) => (
-        <li key={e.id} className={styles.event}>
-          <div>
+        <li key={e.id}>
+          <span className={styles.eventWhat}>
             <strong>{e.actor_name}</strong>
-            {e.actor_ref ? ` (${e.actor_ref})` : ''} {e.action}
-            {e.note ? `: ${e.note}` : ''}
-          </div>
-          <div className={styles.eventWhen}>{formatDateTime(e.created_at)}</div>
+            {e.actor_ref ? (
+              <>
+                {' '}
+                <Mono>{e.actor_ref}</Mono>
+              </>
+            ) : null}{' '}
+            {e.action}
+            {e.note ? <span className={styles.eventNote}> “{e.note}”</span> : null}
+          </span>
+          <time className={styles.eventWhen} dateTime={e.created_at}>
+            {formatDateTime(e.created_at)}
+          </time>
         </li>
       ))}
     </ol>
   );
 }
 
-export function ConcernCard({
-  flag,
-  audience,
-  medicationNames,
-}: {
-  flag: Flag;
-  audience: 'clinician' | 'patient';
-  medicationNames?: string[];
-}) {
+export function Concern({ flag, medicationNames, audience = 'clinician' }: { flag: Flag; medicationNames?: string[]; audience?: 'clinician' | 'patient' }) {
   return (
-    <Card>
-      <div className={styles.head}>
-        <strong>{flag.title}</strong>
+    <article className={styles.concern} data-severity={flag.severity}>
+      <header className={styles.concernHead}>
+        <h3>{flag.title}</h3>
         <Badge tone={severityTone(flag.severity)}>{flag.severity_label}</Badge>
-      </div>
-      {medicationNames?.length ? <div className={styles.muted}>Medicines: {medicationNames.join(', ')}</div> : null}
-      <p style={{ margin: 0 }}>{audience === 'clinician' ? flag.clinician_text : flag.patient_text}</p>
+      </header>
+      {medicationNames?.length ? <p className={styles.concernMeds}>{medicationNames.join(' and ')}</p> : null}
+      <p className={styles.concernText}>{audience === 'clinician' ? flag.clinician_text : flag.patient_text}</p>
       {flag.decision ? (
         <div className={styles.decision}>
-          <strong>{flag.decision.text}</strong>
-          <div className={styles.muted}>
+          <p>{flag.decision.text}</p>
+          <p className={styles.decisionBy}>
             {flag.decision.by}
-            {flag.decision.registration ? `, Reg. ${flag.decision.registration}` : ''} · {formatDateTime(flag.decision.at)}
-          </div>
+            {flag.decision.registration ? (
+              <>
+                {' · Reg. '}
+                <Mono>{flag.decision.registration}</Mono>
+              </>
+            ) : null}
+            {' · '}
+            {formatDateTime(flag.decision.at)}
+          </p>
         </div>
       ) : (
-        <Badge tone="neutral">{flag.status_label}</Badge>
+        <p className={styles.status}>{flag.status_label}</p>
       )}
-      <details className={styles.details}>
+      <details className={styles.why}>
         <summary>Why this was flagged</summary>
-        <ul className={styles.reasoning}>
+        <ul>
           {flag.reasoning.map((r) => (
             <li key={r}>{r}</li>
           ))}
         </ul>
-        <div className={styles.sources}>
-          {flag.sources.map((s) =>
-            s.url ? (
-              <a key={s.label} href={s.url} target="_blank" rel="noreferrer">
-                {s.label}
-              </a>
-            ) : (
-              <span key={s.label}>{s.label}</span>
-            ),
-          )}
-          <span>Rules version {flag.rules_version}</span>
-        </div>
+        <p className={styles.sources}>
+          {flag.sources.map((s, i) => (
+            <span key={s.label}>
+              {i ? ' · ' : ''}
+              {s.url ? (
+                <a href={s.url} target="_blank" rel="noreferrer">
+                  {s.label}
+                </a>
+              ) : (
+                s.label
+              )}
+            </span>
+          ))}
+          <span> · Rules {flag.rules_version}</span>
+        </p>
       </details>
-      {flag.events?.length ? (
-        <details className={styles.details}>
-          <summary>Audit trail</summary>
-          <Timeline events={flag.events} />
-        </details>
-      ) : null}
-    </Card>
+    </article>
   );
 }

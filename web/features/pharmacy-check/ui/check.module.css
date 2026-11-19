@@ -1,51 +1,40 @@
 .options {
   list-style: none;
   margin: 0;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
+  padding: var(--space-1);
+  border: var(--border-hairline-width) solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-raised);
+  box-shadow: var(--shadow-raised);
 }
 
 .option {
   width: 100%;
-  text-align: left;
-  background: var(--surface);
-  border: none;
-  border-top: 1px solid var(--line);
-  padding: 10px 14px;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-ui);
+  background: none;
+  text-align: left;
   cursor: pointer;
 }
 
-.options li:first-child .option {
-  border-top: none;
+.option:hover,
+.option:focus-visible {
+  background: var(--color-state-hover);
 }
 
-.option:hover {
-  background: var(--surface-muted);
-}
-
-.option span {
-  color: var(--ink-faint);
-  font-size: 14px;
-}
-
-.result {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.composition,
+.muted {
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-small);
 }
 
 .overlap {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
-
-.muted {
-  color: var(--ink-faint);
-  font-size: 14px;
+  align-items: flex-start;
+  gap: var(--space-1);
 }

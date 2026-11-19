@@ -1,11 +1,17 @@
 'use client';
 
+import { Page, PageTitle } from '@/shared/ui/layout/Page';
+import { Button } from '@/shared/ui/action/Button';
+
 export default function Error({ reset }: { error: Error; reset: () => void }) {
   return (
-    <main style={{ padding: 24, maxWidth: 640, margin: '0 auto' }}>
-      <h1>Something went wrong</h1>
-      <p>Please try again. Nothing about the patient’s medicines has been changed.</p>
-      <button onClick={reset}>Try again</button>
-    </main>
+    <Page>
+      <PageTitle title="Something went wrong" description="Nothing about anyone’s medicines has changed. Please try again." />
+      <div>
+        <Button variant="primary" onClick={reset}>
+          Try again
+        </Button>
+      </div>
+    </Page>
   );
 }

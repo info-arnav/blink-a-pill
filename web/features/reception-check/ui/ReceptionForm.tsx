@@ -1,28 +1,36 @@
 'use client';
 
+import { useActionState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useActionState } from 'react';
-import { Button, Choice, Field, Notice, Stack } from '@/shared/ui/primitives';
+import { Button } from '@/shared/ui/action/Button';
+import { Field, Fieldset, RadioCard } from '@/shared/ui/field/Field';
+import { Callout } from '@/shared/ui/status/Callout';
+import { Stack } from '@/shared/ui/layout/Page';
 import { IDLE } from '@/shared/lib/action-state';
 import { submitReception } from '../api/actions';
 
 export function ReceptionForm({ token, doctor }: { token: string; doctor: string }) {
   const [state, action, pending] = useActionState(submitReception.bind(null, token), IDLE);
   const router = useRouter();
+
   useEffect(() => {
     if (state.status === 'ok') router.refresh();
   }, [state.status, router]);
-  if (state.status === 'ok') return <Notice tone="ok">{state.message}</Notice>;
+
+  if (state.status === 'ok') return <Callout tone="success" title={state.message} />;
+
   return (
     <form action={action}>
-      <Stack>
-        <Choice name="result" value="matches" title="Yes, this matches our records" text={`${doctor} will get one message to decide.`} required />
-        <Choice name="result" value="does_not_match" title="No, this does not match" text="The patient will be asked to bring their prescription." />
+      <Stack gap={6}>
+        <Fieldset legend="Does this list match your records?">
+          <RadioCard name="result" value="matches" title="Yes, it matches" detail={`${doctor} gets one message to decide.`} required />
+          <RadioCard name="result" value="does_not_match" title="No, it does not match" detail="The patient is asked to bring the prescription to the next visit." />
+        </Fieldset>
         <Field label="Your name" name="staff_name" autoComplete="name" required maxLength={120} />
-        <Field label="Note (optional)" name="note" maxLength={500} />
-        {state.status === 'error' ? <Notice tone="error">{state.message}</Notice> : null}
-        <Button type="submit" disabled={pending} block>
-          {pending ? 'Sending…' : 'Send answer'}
+        <Field label="Note for the record" name="note" maxLength={500} hint="Optional." />
+        {state.status === 'error' ? <Callout tone="danger" title={state.message} /> : null}
+        <Button type="submit" variant="primary" size="large" pending={pending} block>
+          Send answer
         </Button>
       </Stack>
     </form>

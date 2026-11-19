@@ -1,12 +1,12 @@
 import { useState } from 'react';
+import { Alert } from 'react-native';
 import { router } from 'expo-router';
 import { api, errorMessage } from '@/lib/api';
 import { usePatient, useSession } from '@/lib/session';
 import { useData } from '@/lib/use-data';
 import type { Patient } from '@/lib/types';
-import { Body, Button, Card, Field, Heading, ListItem, Notice, Screen, Title } from '@/ui/kit';
+import { Banner, Button, Cell, ErrorText, Group, Icon, Input, Screen } from '@/ui/kit';
 import { useColors } from '@/ui/theme';
-import { Text } from 'react-native';
 
 type Member = { id: string; name: string | null; phone: string; role: 'self' | 'caregiver'; relation: string | null };
 
@@ -14,20 +14,11 @@ export default function People() {
   const patient = usePatient();
   const { patients, choose, refresh, user } = useSession();
   const c = useColors();
-  const [invite, setInvite] = useState<{ code: string; expires_at: string } | null>(null);
+  const [invite, setInvite] = useState<{ code: string } | null>(null);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const { data: members, reload } = useData(() => api<Member[]>(`/v1/patients/${patient.id}/members`), [patient.id]);
-
-  const makeInvite = async () => {
-    setError(null);
-    try {
-      setInvite(await api(`/v1/patients/${patient.id}/invites`, { method: 'POST', body: {} }));
-    } catch (err) {
-      setError(errorMessage(err));
-    }
-  };
 
   const join = async () => {
     setBusy(true);
@@ -44,51 +35,63 @@ export default function People() {
     }
   };
 
-  const remove = async (member: Member) => {
-    try {
-      await api(`/v1/patients/${patient.id}/members/${member.id}`, { method: 'DELETE' });
-      void reload();
-    } catch (err) {
-      setError(errorMessage(err));
-    }
-  };
+  const remove = (member: Member) =>
+    Alert.alert(`Remove ${member.name ?? 'caregiver'}?`, undefined, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          await api(`/v1/patients/${patient.id}/members/${member.id}`, { method: 'DELETE' }).catch((err) => setError(errorMessage(err)));
+          void reload();
+        },
+      },
+    ]);
 
   return (
-    <Screen edges={['bottom']}>
-      <Title eyebrow="Family and caregivers">People you manage</Title>
-      <Card>
+    <Screen>
+      <Group header="People">
         {patients.map((p) => (
-          <ListItem key={p.id} title={p.role === 'self' ? `${p.full_name} (me)` : p.full_name} subtitle={p.role === 'caregiver' ? `You are a caregiver${p.relation ? ` · ${p.relation}` : ''}` : 'Your own profile'} onPress={() => { void choose(p.id); router.back(); }} />
-        ))}
-        <Button title="Add someone I care for" variant="secondary" onPress={() => router.push('/profile-new')} />
-      </Card>
-
-      <Card>
-        <Heading>Who can manage {patient.full_name.split(' ')[0]}’s medicines</Heading>
-        {(members ?? []).map((m) => (
-          <ListItem
-            key={m.id}
-            title={`${m.name ?? 'Unnamed'}${m.id === user?.id ? ' (you)' : ''}`}
-            subtitle={m.role === 'self' ? 'Patient' : `Caregiver${m.relation ? ` · ${m.relation}` : ''}`}
-            right={patient.role === 'self' && m.role === 'caregiver' ? <Button title="Remove" variant="ghost" onPress={() => remove(m)} /> : undefined}
+          <Cell
+            key={p.id}
+            title={p.role === 'self' ? `${p.full_name} (me)` : p.full_name}
+            subtitle={p.role === 'caregiver' ? (p.relation ?? 'Caring for') : undefined}
+            trailing={p.id === patient.id ? <Icon name="checkmark" size={17} color={c.tint} fallback="✓" /> : undefined}
+            onPress={() => void choose(p.id)}
           />
         ))}
-        <Button title="Invite a family member" onPress={makeInvite} />
-        {invite ? (
-          <Notice tone="info">
-            Ask them to install blink-a-pill and enter this code:{' '}
-            <Text style={{ fontWeight: '800', letterSpacing: 4, color: c.ink }}>{invite.code}</Text>. It works for 48 hours.
-          </Notice>
-        ) : null}
-      </Card>
+        <Cell title="Add Person" tint onPress={() => router.push('/profile-new')} />
+      </Group>
 
-      <Card>
-        <Heading>Got a family code?</Heading>
-        <Body muted>Enter the code a family member gave you to help manage their medicines.</Body>
-        <Field label="Family code" value={code} onChangeText={(v) => setCode(v.toUpperCase())} autoCapitalize="characters" maxLength={6} />
-        <Button title="Join" variant="secondary" onPress={join} busy={busy} disabled={code.trim().length !== 6} />
-      </Card>
-      {error ? <Notice tone="error">{error}</Notice> : null}
+      <Group header={`Managing ${patient.full_name.split(' ')[0]}`}>
+        {(members ?? []).map((m) => (
+          <Cell
+            key={m.id}
+            title={`${m.name ?? 'Unnamed'}${m.id === user?.id ? ' (you)' : ''}`}
+            subtitle={m.role === 'self' ? 'Patient' : (m.relation ?? 'Caregiver')}
+            trailing={patient.role === 'self' && m.role === 'caregiver' ? <Button title="Remove" kind="plain" size="small" onPress={() => remove(m)} /> : undefined}
+          />
+        ))}
+        <Cell
+          title="Invite Family Member"
+          tint
+          onPress={async () => {
+            setError(null);
+            try {
+              setInvite(await api(`/v1/patients/${patient.id}/invites`, { method: 'POST', body: {} }));
+            } catch (err) {
+              setError(errorMessage(err));
+            }
+          }}
+        />
+      </Group>
+      {invite ? <Banner tone="tint" symbol="person.badge.plus" title={`Code: ${invite.code}`}>They enter it after signing in. Works for 48 hours.</Banner> : null}
+
+      <Group header="Join With a Code">
+        <Input label="Family code" value={code} onChangeText={(v) => setCode(v.toUpperCase())} autoCapitalize="characters" maxLength={6} />
+      </Group>
+      {error ? <ErrorText>{error}</ErrorText> : null}
+      <Button title="Join" kind="tinted" onPress={join} busy={busy} disabled={code.trim().length !== 6} />
     </Screen>
   );
 }

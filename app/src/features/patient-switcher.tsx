@@ -15,25 +15,25 @@ export function PatientSwitcher() {
       else if (index === patients.length) router.push('/profile-new');
     };
     if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions({ options: labels, cancelButtonIndex: labels.length - 1, title: 'Whose medicines?' }, pick);
+      ActionSheetIOS.showActionSheetWithOptions({ options: labels, cancelButtonIndex: labels.length - 1, title: 'Show medicines for' }, pick);
     } else {
-      Alert.alert('Whose medicines?', undefined, [
+      Alert.alert('Show medicines for', undefined, [
         ...labels.slice(0, -1).map((label, index) => ({ text: label, onPress: () => pick(index) })),
         { text: 'Cancel', style: 'cancel' as const },
       ]);
     }
   };
 
+  const initials = active.full_name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('');
+
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`Showing ${active.full_name}. Change person`} onPress={open}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 }}>
-        <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: c.brand, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ color: c.onBrand, fontWeight: '700' }}>{active.full_name.charAt(0).toUpperCase()}</Text>
-        </View>
-        <Text style={{ color: c.ink, fontWeight: '600', fontSize: 16 }}>
-          {active.role === 'caregiver' ? `Caring for ${active.full_name.split(' ')[0]}` : active.full_name.split(' ')[0]}
-        </Text>
-        <Text style={{ color: c.inkFaint }}>▾</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={`Showing ${active.full_name}. Switch person`} onPress={open} hitSlop={8}>
+      <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: active.role === 'caregiver' ? c.orange : c.tint, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>{initials}</Text>
       </View>
     </Pressable>
   );

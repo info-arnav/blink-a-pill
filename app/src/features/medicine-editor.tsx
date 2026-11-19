@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { View } from 'react-native';
 import { api } from '@/lib/api';
 import type { Product } from '@/lib/types';
-import { Body, Chips, Field } from '@/ui/kit';
+import { Cell, Group, Icon, Input, Pills, Txt } from '@/ui/kit';
 import { useColors } from '@/ui/theme';
 
 export type Draft = {
@@ -18,12 +18,12 @@ export type Draft = {
 };
 
 export const FREQUENCY_OPTIONS = [
-  { value: 'OD' as const, label: 'Once a day' },
+  { value: 'OD' as const, label: 'Once' },
   { value: 'BD' as const, label: 'Twice' },
-  { value: 'TID' as const, label: 'Three times' },
-  { value: 'QID' as const, label: 'Four times' },
-  { value: 'HS' as const, label: 'At bedtime' },
-  { value: 'SOS' as const, label: 'Only when needed' },
+  { value: 'TID' as const, label: '3 times' },
+  { value: 'QID' as const, label: '4 times' },
+  { value: 'HS' as const, label: 'Bedtime' },
+  { value: 'SOS' as const, label: 'When needed' },
 ];
 
 export const MEAL_OPTIONS = [
@@ -32,37 +32,26 @@ export const MEAL_OPTIONS = [
   { value: 'any' as const, label: 'Any time' },
 ];
 
-function ProductOption({ product, selected, onPress }: { product: Product; selected: boolean; onPress: () => void }) {
+function Option({ product, selected, onPress }: { product: Product; selected: boolean; onPress: () => void }) {
   const c = useColors();
   return (
-    <Pressable
-      accessibilityRole="radio"
-      accessibilityState={{ selected }}
+    <Cell
+      title={product.name}
+      subtitle={product.composition}
       onPress={onPress}
-      style={{
-        borderWidth: 2,
-        borderColor: selected ? c.brand : c.line,
-        backgroundColor: selected ? c.brandTint : c.surface,
-        borderRadius: 12,
-        padding: 12,
-        gap: 2,
-      }}>
-      <Text style={{ color: c.ink, fontSize: 17, fontWeight: '700' }}>{product.name}</Text>
-      <Text style={{ color: c.inkSoft, fontSize: 15 }}>{product.composition}</Text>
-      {product.manufacturer ? <Text style={{ color: c.inkFaint, fontSize: 13 }}>{product.manufacturer}</Text> : null}
-    </Pressable>
+      trailing={selected ? <Icon name="checkmark" size={17} color={c.tint} fallback="✓" /> : <View style={{ width: 17 }} />}
+    />
   );
 }
 
-export function MedicineEditor({ draft, onChange, patientId }: { draft: Draft; onChange: (next: Draft) => void; patientId: string }) {
+export function MedicineEditor({ draft, onChange, label }: { draft: Draft; onChange: (next: Draft) => void; label?: string }) {
+  const c = useColors();
   const [results, setResults] = useState<Product[]>([]);
   const [typing, setTyping] = useState(draft.candidates.length === 0);
+  const set = (patch: Partial<Draft>) => onChange({ ...draft, ...patch });
 
   useEffect(() => {
-    if (!typing || draft.typedName.trim().length < 2) {
-      setResults([]);
-      return;
-    }
+    if (!typing || draft.typedName.trim().length < 2 || draft.product?.name === draft.typedName) return;
     const id = setTimeout(async () => {
       try {
         setResults(await api<Product[]>(`/v1/drugs/search?q=${encodeURIComponent(draft.typedName.trim())}`));
@@ -71,47 +60,36 @@ export function MedicineEditor({ draft, onChange, patientId }: { draft: Draft; o
       }
     }, 300);
     return () => clearTimeout(id);
-  }, [draft.typedName, typing, patientId]);
-
-  const set = (patch: Partial<Draft>) => onChange({ ...draft, ...patch });
+  }, [draft.typedName, draft.product, typing]);
 
   return (
-    <View style={{ gap: 12 }}>
+    <View style={{ gap: 16 }}>
       {draft.candidates.length && !typing ? (
-        <>
-          <Body bold>Which one is it?</Body>
+        <Group header={label} footer="Pick the one on your strip or prescription.">
           {draft.candidates.map((p) => (
-            <ProductOption key={p.id} product={p} selected={draft.product?.id === p.id} onPress={() => set({ product: p })} />
+            <Option key={p.id} product={p} selected={draft.product?.id === p.id} onPress={() => set({ product: p })} />
           ))}
-          <Pressable accessibilityRole="button" onPress={() => { setTyping(true); set({ product: null, typedName: draft.written }); }}>
-            <Body bold>None of these. Let me type it.</Body>
-          </Pressable>
-        </>
+          <Cell title="None of these" tint onPress={() => { setTyping(true); set({ product: null, typedName: draft.written }); }} />
+        </Group>
       ) : (
-        <>
-          <Field label="Medicine name" value={draft.typedName} onChangeText={(v) => set({ typedName: v, product: null })} placeholder="For example Telma 40" autoCorrect={false} />
-          {results.slice(0, 5).map((p) => (
-            <ProductOption key={p.id} product={p} selected={draft.product?.id === p.id} onPress={() => set({ product: p, typedName: p.name })} />
+        <Group header={label} footer={draft.typedName.trim().length >= 2 && !draft.product ? 'Not found? It will be saved as typed, but can’t be checked.' : undefined}>
+          <Input label="Medicine" value={draft.typedName} onChangeText={(v) => set({ typedName: v, product: null })} placeholder="Telma 40" autoCorrect={false} />
+          {(draft.product ? [draft.product] : results.slice(0, 5)).map((p) => (
+            <Option key={p.id} product={p} selected={draft.product?.id === p.id} onPress={() => set({ product: p, typedName: p.name })} />
           ))}
-          {draft.typedName.trim().length >= 2 && !draft.product ? (
-            <Body small muted>
-              If you cannot find it, we will save the name as you typed it. We will not be able to check it against your other medicines.
-            </Body>
-          ) : null}
-        </>
+        </Group>
       )}
-      <Body bold>How often?</Body>
-      <Chips value={draft.frequency} onChange={(frequency) => set({ frequency })} options={FREQUENCY_OPTIONS} />
-      <Body bold>When?</Body>
-      <Chips value={draft.meal} onChange={(meal) => set({ meal })} options={MEAL_OPTIONS} />
-      <View style={{ flexDirection: 'row', gap: 12 }}>
-        <View style={{ flex: 1 }}>
-          <Field label="Tablets each time" value={draft.dose_amount} onChangeText={(v) => set({ dose_amount: v })} keyboardType="decimal-pad" maxLength={4} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Field label="For how many days" value={draft.duration} onChangeText={(v) => set({ duration: v.replace(/\D/g, '') })} keyboardType="number-pad" placeholder="Leave empty if ongoing" maxLength={4} />
-        </View>
+      <View style={{ gap: 8 }}>
+        <Txt style="footnote" color={c.secondaryLabel}>
+          HOW OFTEN
+        </Txt>
+        <Pills value={draft.frequency} onChange={(frequency) => set({ frequency })} options={FREQUENCY_OPTIONS} />
       </View>
+      <Pills value={draft.meal} onChange={(meal) => set({ meal })} options={MEAL_OPTIONS} />
+      <Group>
+        <Input label="Tablets each time" value={draft.dose_amount} onChangeText={(v) => set({ dose_amount: v })} keyboardType="decimal-pad" maxLength={4} />
+        <Input label="Days (empty if ongoing)" value={draft.duration} onChangeText={(v) => set({ duration: v.replace(/\D/g, '') })} keyboardType="number-pad" maxLength={4} />
+      </Group>
     </View>
   );
 }

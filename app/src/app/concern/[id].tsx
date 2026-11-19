@@ -1,16 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Linking, Text, View } from 'react-native';
+import { Linking, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { api, errorMessage } from '@/lib/api';
 import { usePatient } from '@/lib/session';
 import { useData } from '@/lib/use-data';
 import type { Flag, Medication } from '@/lib/types';
-import { Badge, Body, Button, Card, Field, Heading, Loading, Notice, Screen } from '@/ui/kit';
-import { severityColors, useColors } from '@/ui/theme';
+import { Banner, Button, Cell, ErrorText, Group, Icon, Input, Loading, Screen, Txt } from '@/ui/kit';
+import { severityColor, useColors } from '@/ui/theme';
 
-function formatWhen(value: string) {
-  return new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(value));
-}
+const when = (value: string) => new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(value));
 
 export default function Concern() {
   const { id, fresh } = useLocalSearchParams<{ id: string; fresh?: string }>();
@@ -24,24 +22,21 @@ export default function Concern() {
   const [sent, setSent] = useState<string | null>(null);
 
   const { data, reload } = useData(async () => {
-    const [flag, meds] = await Promise.all([
-      api<Flag>(`/v1/patients/${patient.id}/flags/${id}`),
-      api<Medication[]>(`/v1/patients/${patient.id}/medications?all=1`),
-    ]);
+    const [flag, meds] = await Promise.all([api<Flag>(`/v1/patients/${patient.id}/flags/${id}`), api<Medication[]>(`/v1/patients/${patient.id}/medications?all=1`)]);
     return { flag, meds };
   }, [patient.id, id]);
 
   useEffect(() => {
     if (!data) return;
-    const involved = data.meds.filter((m) => data.flag.medication_ids.includes(m.id)).sort((a, b) => (a.prescribed_on ?? '').localeCompare(b.prescribed_on ?? ''));
-    const newest = [...involved].reverse().find((m) => m.prescriber?.phone) ?? [...involved].reverse().find((m) => m.prescriber) ?? null;
+    const involved = data.meds.filter((m) => data.flag.medication_ids.includes(m.id)).sort((a, b) => (b.prescribed_on ?? '').localeCompare(a.prescribed_on ?? ''));
+    const newest = involved.find((m) => m.prescriber?.phone) ?? involved.find((m) => m.prescriber) ?? null;
     if (newest?.prescriber) setDoctor((d) => (d.name ? d : { name: newest.prescriber!.name, phone: newest.prescriber!.phone?.slice(-10) ?? '' }));
     if (newest?.clinic) setClinic((cl) => (cl.name ? cl : { name: newest.clinic!.name, phone: newest.clinic!.reception_phone?.slice(-10) ?? '' }));
   }, [data]);
 
   if (!data) return <Loading />;
   const { flag } = data;
-  const colors = severityColors(c, flag.severity);
+  const tone = severityColor(c, flag.severity);
 
   const ask = async () => {
     setBusy(true);
@@ -54,11 +49,7 @@ export default function Concern() {
           clinic: clinic.name.trim() ? { name: clinic.name.trim(), reception_phone: clinic.phone.trim() || undefined } : undefined,
         },
       });
-      setSent(
-        result.routed_to === 'reception'
-          ? `Sent. ${result.clinic} reception will first check your list, then ${result.doctor} gets one message to decide.`
-          : `Sent. ${result.doctor} gets one message to decide. You will get the answer on WhatsApp and here.`,
-      );
+      setSent(result.routed_to === 'reception' ? `Sent to ${result.clinic}. Then ${result.doctor} decides.` : `Sent to ${result.doctor}.`);
       setAsking(false);
       void reload();
     } catch (err) {
@@ -69,92 +60,69 @@ export default function Concern() {
   };
 
   return (
-    <Screen edges={['bottom']}>
-      {fresh ? <Notice tone="warn">We noticed something while adding your medicine. Nothing has been changed.</Notice> : null}
-      <View style={{ backgroundColor: colors.bg, borderRadius: 16, padding: 18, gap: 8 }}>
-        <Badge label={flag.severity_label} severity={flag.severity} />
-        <Text style={{ color: colors.fg, fontSize: 24, fontWeight: '800' }}>{flag.title}</Text>
-        <Text style={{ color: c.ink, fontSize: 18, lineHeight: 26 }}>{flag.patient_text}</Text>
+    <Screen>
+      <View style={{ gap: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Icon name="exclamationmark.triangle.fill" size={18} color={tone.fg} fallback="!" />
+          <Txt style="subhead" color={tone.fg} weight="600">
+            {flag.severity_label}
+          </Txt>
+        </View>
+        <Txt style="title1">{flag.title}</Txt>
+        <Txt style="body" color={c.secondaryLabel}>
+          {flag.patient_text}
+        </Txt>
       </View>
 
+      {fresh ? <Banner tone="tint" symbol="info.circle.fill" title="Nothing has been changed." /> : null}
+
       {flag.decision ? (
-        <Card tone="ok">
-          <Heading>Your doctor answered</Heading>
-          <Body>{flag.decision.text}</Body>
-          <Body small muted>
-            {flag.decision.by}
-            {flag.decision.registration ? `, Reg. ${flag.decision.registration}` : ''} · {formatWhen(flag.decision.at)}
-          </Body>
-        </Card>
-      ) : (
-        <Card>
-          <Heading>Where this is</Heading>
-          <Body>{flag.status_label}</Body>
-        </Card>
-      )}
-
-      {sent ? <Notice tone="ok">{sent}</Notice> : null}
-
-      {flag.is_open && !asking ? (
-        <Button title={flag.status === 'open' ? 'Ask my doctor' : 'Send to my doctor again'} onPress={() => setAsking(true)} />
+        <Banner tone="green" symbol="checkmark.seal.fill" title={flag.decision.text ?? 'Answered'}>
+          {`${flag.decision.by}${flag.decision.registration ? ` · Reg. ${flag.decision.registration}` : ''} · ${when(flag.decision.at)}`}
+        </Banner>
       ) : null}
+
+      {sent ? <Banner tone="green" symbol="paperplane.fill" title={sent} /> : null}
+
+      {flag.is_open && !asking ? <Button title={flag.status === 'open' ? 'Ask My Doctor' : 'Ask Again'} symbol="stethoscope" onPress={() => setAsking(true)} /> : null}
 
       {asking ? (
-        <Card>
-          <Heading>Ask my doctor</Heading>
-          <Body muted>Check these details. The message only says a patient needs a decision. Medicine names are only shown after they open the link.</Body>
-          <Field label="Doctor’s name" value={doctor.name} onChangeText={(name) => setDoctor((d) => ({ ...d, name }))} />
-          <Field label="Doctor’s WhatsApp number" value={doctor.phone} onChangeText={(phone) => setDoctor((d) => ({ ...d, phone }))} keyboardType="phone-pad" />
-          <Field label="Clinic name (optional)" value={clinic.name} onChangeText={(name) => setClinic((cl) => ({ ...cl, name }))} />
-          <Field label="Clinic reception number (optional)" value={clinic.phone} onChangeText={(phone) => setClinic((cl) => ({ ...cl, phone }))} keyboardType="phone-pad" hint="If you add it, reception first confirms your list matches their records." />
-          {error ? <Notice tone="error">{error}</Notice> : null}
+        <View style={{ gap: 16 }}>
+          <Group header="Ask My Doctor" footer="The message has no medicine names. They see details after opening the link.">
+            <Input label="Doctor" value={doctor.name} onChangeText={(name) => setDoctor((d) => ({ ...d, name }))} />
+            <Input label="Doctor’s WhatsApp" value={doctor.phone} onChangeText={(phone) => setDoctor((d) => ({ ...d, phone }))} keyboardType="phone-pad" />
+            <Input label="Clinic (optional)" value={clinic.name} onChangeText={(name) => setClinic((cl) => ({ ...cl, name }))} />
+            <Input label="Reception WhatsApp (optional)" value={clinic.phone} onChangeText={(phone) => setClinic((cl) => ({ ...cl, phone }))} keyboardType="phone-pad" />
+          </Group>
+          {error ? <ErrorText>{error}</ErrorText> : null}
           <Button title="Send" onPress={ask} busy={busy} disabled={!doctor.name.trim() || doctor.phone.replace(/\D/g, '').length < 10} />
-          <Button title="Cancel" variant="ghost" onPress={() => setAsking(false)} />
-        </Card>
+          <Button title="Cancel" kind="plain" size="medium" onPress={() => setAsking(false)} />
+        </View>
       ) : null}
 
-      <Card>
-        <Heading>Medicines involved</Heading>
+      <Group header="Medicines">
         {(flag.medications ?? []).map((m) => (
-          <Body key={m.id}>
-            {m.name}
-            {m.status !== 'active' ? ' (no longer taking)' : ''}
-          </Body>
+          <Cell key={m.id} title={m.name} value={m.status !== 'active' ? 'Stopped' : undefined} />
         ))}
-      </Card>
+      </Group>
 
-      <Card>
-        <Heading>Why we flagged this</Heading>
+      <Group header="Why" footer={`Rules ${flag.rules_version}`}>
         {flag.reasoning.map((r) => (
-          <Body key={r} muted>
-            • {r}
-          </Body>
+          <Cell key={r} title={r} />
         ))}
-        {flag.sources.map((s) => (
-          <Text key={s.label} style={{ color: s.url ? c.brand : c.inkFaint, fontSize: 15 }} onPress={s.url ? () => Linking.openURL(s.url!) : undefined}>
-            {s.label}
-          </Text>
-        ))}
-        <Body small muted>
-          Rules version {flag.rules_version}
-        </Body>
-      </Card>
+        {flag.sources
+          .filter((s) => s.url)
+          .map((s) => (
+            <Cell key={s.label} title={s.label} tint onPress={() => Linking.openURL(s.url!)} />
+          ))}
+      </Group>
 
       {flag.events?.length ? (
-        <Card>
-          <Heading>What has happened</Heading>
+        <Group header="History">
           {flag.events.map((e) => (
-            <View key={e.id} style={{ gap: 2 }}>
-              <Body small>
-                <Text style={{ fontWeight: '700' }}>{e.actor_name}</Text>
-                {e.actor_ref ? ` (${e.actor_ref})` : ''} {e.action}
-              </Body>
-              <Body small muted>
-                {formatWhen(e.created_at)}
-              </Body>
-            </View>
+            <Cell key={e.id} title={`${e.actor_name} ${e.action}`} subtitle={`${e.actor_ref ? `${e.actor_ref} · ` : ''}${when(e.created_at)}`} />
           ))}
-        </Card>
+        </Group>
       ) : null}
     </Screen>
   );

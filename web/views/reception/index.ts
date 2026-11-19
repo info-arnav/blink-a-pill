@@ -1,1 +1,1 @@
-export { ReceptionPage } from './ui/ReceptionPage';
+export { ReceptionPage, metadata } from './ui/ReceptionPage';

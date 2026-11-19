@@ -1,1 +1,1 @@
-export { PharmacyCardPage as default } from '@/views/pharmacy';
+export { PharmacyCardPage as default, cardMetadata as metadata } from '@/views/pharmacy';

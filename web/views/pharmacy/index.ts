@@ -1,2 +1,2 @@
-export { PharmacyHome } from './ui/PharmacyHome';
-export { PharmacyCardPage } from './ui/PharmacyCardPage';
+export { PharmacyHome, metadata } from './ui/PharmacyHome';
+export { PharmacyCardPage, metadata as cardMetadata } from './ui/PharmacyCardPage';

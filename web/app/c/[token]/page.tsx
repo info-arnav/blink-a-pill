@@ -1,1 +1,1 @@
-export { CardPage as default } from '@/views/card';
+export { CardPage as default, metadata } from '@/views/card';

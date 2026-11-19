@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Image, Pressable, Text, View } from 'react-native';
+import { Image, View } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { api, errorMessage, upload } from '@/lib/api';
 import { usePatient } from '@/lib/session';
 import type { Capture, Flag, Medication } from '@/lib/types';
 import { MedicineEditor, draftReady, draftToBody, type Draft } from '@/features/medicine-editor';
-import { Body, Button, Card, Field, Heading, Loading, Notice, Screen, Title } from '@/ui/kit';
+import { Button, Cell, Empty, ErrorText, Group, Input, Loading, Screen, Txt } from '@/ui/kit';
 import { useColors } from '@/ui/theme';
 
 const FREQ = new Set(['OD', 'BD', 'TID', 'QID', 'HS', 'SOS']);
@@ -39,18 +39,18 @@ export default function AddPhoto() {
 
   const pick = async (source: 'camera' | 'library') => {
     setError(null);
-    const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.6, allowsEditing: false };
+    const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.6 };
     let result: ImagePicker.ImagePickerResult;
     if (source === 'camera') {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
-        setError('Camera access is off. You can allow it in Settings, or choose a photo instead.');
+        setError('Camera access is off. Allow it in Settings, or choose a photo.');
         return;
       }
       try {
         result = await ImagePicker.launchCameraAsync(options);
       } catch {
-        setError('The camera is not available on this device. Choose a photo instead.');
+        setError('No camera on this device. Choose a photo instead.');
         return;
       }
     } else {
@@ -61,11 +61,7 @@ export default function AddPhoto() {
     setPhoto(asset.uri);
     setReading(true);
     try {
-      const read = await upload<Capture>(`/v1/patients/${patient.id}/capture`, {
-        uri: asset.uri,
-        name: asset.fileName ?? 'prescription.jpg',
-        type: asset.mimeType ?? 'image/jpeg',
-      });
+      const read = await upload<Capture>(`/v1/patients/${patient.id}/capture`, { uri: asset.uri, name: asset.fileName ?? 'prescription.jpg', type: asset.mimeType ?? 'image/jpeg' });
       setCapture(read);
       setDrafts(read.items.map(toDraft));
       setDoctor({ name: read.doctor?.name ?? '', phone: read.doctor?.phone ?? '' });
@@ -106,69 +102,64 @@ export default function AddPhoto() {
 
   const included = drafts.filter((d) => d.include);
 
+  if (!capture) {
+    return (
+      <Screen>
+        {photo ? <Image source={{ uri: photo }} style={{ width: '100%', height: 280, borderRadius: 12 }} resizeMode="cover" accessibilityLabel="Your photo" /> : null}
+        {reading ? (
+          <View style={{ gap: 8 }}>
+            <Loading />
+            <Txt style="subhead" color={c.secondaryLabel} align="center">
+              Reading…
+            </Txt>
+          </View>
+        ) : (
+          <>
+            {!photo ? <Empty symbol="doc.text.viewfinder" title="Photograph the prescription" detail="Flat, in good light. You check every line before saving." /> : null}
+            <View style={{ gap: 10 }}>
+              <Button title="Take Photo" symbol="camera.fill" onPress={() => pick('camera')} />
+              <Button title="Choose Photo" symbol="photo.on.rectangle" kind="gray" onPress={() => pick('library')} />
+            </View>
+          </>
+        )}
+        {error ? <ErrorText>{error}</ErrorText> : null}
+      </Screen>
+    );
+  }
+
   return (
-    <Screen edges={['bottom']}>
-      {!capture ? (
-        <>
-          <Title>Photograph the prescription or strip</Title>
-          <Body muted>Lay it flat in good light. We will show you what we read, and you check every line before anything is saved.</Body>
-          {photo ? <Image source={{ uri: photo }} style={{ width: '100%', height: 260, borderRadius: 14 }} resizeMode="cover" accessibilityLabel="Your photo" /> : null}
-          {reading ? (
-            <Card>
-              <Loading />
-              <Body muted>Reading your photo…</Body>
-            </Card>
+    <Screen>
+      {photo ? <Image source={{ uri: photo }} style={{ width: '100%', height: 140, borderRadius: 12 }} resizeMode="cover" accessibilityLabel="Your photo" /> : null}
+      {!capture.items.length ? <Empty symbol="questionmark.text.page" title="No medicines found" detail="Try again flat and in good light." /> : null}
+
+      <Group header="Prescribed By">
+        <Input label="Doctor" value={doctor.name} onChangeText={(name) => setDoctor((d) => ({ ...d, name }))} />
+        <Input label="Doctor’s mobile" value={doctor.phone} onChangeText={(phone) => setDoctor((d) => ({ ...d, phone }))} keyboardType="phone-pad" />
+        <Input label="Clinic" value={clinic.name} onChangeText={(name) => setClinic((d) => ({ ...d, name }))} />
+        <Input label="Clinic reception" value={clinic.phone} onChangeText={(phone) => setClinic((d) => ({ ...d, phone }))} keyboardType="phone-pad" />
+      </Group>
+
+      {drafts.map((draft, index) => (
+        <View key={`${draft.written}${index}`} style={{ gap: 8 }}>
+          {draft.include ? (
+            <MedicineEditor label={`We read “${draft.written}”`} draft={draft} onChange={(next) => setDrafts((all) => all.map((d, i) => (i === index ? next : d)))} />
           ) : (
-            <>
-              <Button title="Take a photo" onPress={() => pick('camera')} />
-              <Button title="Choose from my photos" variant="secondary" onPress={() => pick('library')} />
-              <Button title="Type it instead" variant="ghost" onPress={() => router.replace('/add-manual')} />
-            </>
+            <Group>
+              <Cell title={draft.written} subtitle="Skipped" />
+            </Group>
           )}
-          {error ? <Notice tone="error">{error}</Notice> : null}
-        </>
-      ) : (
-        <>
-          <Title eyebrow="Check every line">This is what we read</Title>
-          {photo ? <Image source={{ uri: photo }} style={{ width: '100%', height: 160, borderRadius: 14 }} resizeMode="cover" accessibilityLabel="Your photo" /> : null}
-          {!capture.items.length ? (
-            <Notice tone="warn">We could not find any medicines in this photo. Try again with the page flat and in good light, or type it instead.</Notice>
-          ) : null}
-          <Card>
-            <Heading>Who prescribed this?</Heading>
-            <Field label="Doctor’s name" value={doctor.name} onChangeText={(name) => setDoctor((d) => ({ ...d, name }))} />
-            <Field label="Doctor’s mobile (optional)" value={doctor.phone} onChangeText={(phone) => setDoctor((d) => ({ ...d, phone }))} keyboardType="phone-pad" />
-            <Field label="Clinic or hospital" value={clinic.name} onChangeText={(name) => setClinic((d) => ({ ...d, name }))} />
-            <Field label="Clinic reception number (optional)" value={clinic.phone} onChangeText={(phone) => setClinic((d) => ({ ...d, phone }))} keyboardType="phone-pad" hint="Used only if you ask the doctor about a concern." />
-          </Card>
-          {drafts.map((draft, index) => (
-            <Card key={`${draft.written}${index}`}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: c.inkFaint, fontSize: 13, fontWeight: '700' }}>LINE {index + 1} · WE READ</Text>
-                  <Text style={{ color: c.ink, fontSize: 20, fontWeight: '700' }}>{draft.written}</Text>
-                </View>
-                <Pressable accessibilityRole="switch" accessibilityState={{ checked: draft.include }} onPress={() => setDrafts((all) => all.map((d, i) => (i === index ? { ...d, include: !d.include } : d)))}>
-                  <Text style={{ color: draft.include ? c.sev1 : c.brand, fontWeight: '700' }}>{draft.include ? 'Skip' : 'Add back'}</Text>
-                </Pressable>
-              </View>
-              {draft.include ? (
-                <MedicineEditor patientId={patient.id} draft={draft} onChange={(next) => setDrafts((all) => all.map((d, i) => (i === index ? next : d)))} />
-              ) : (
-                <Body muted>This line will not be added.</Body>
-              )}
-            </Card>
-          ))}
-          {error ? <Notice tone="error">{error}</Notice> : null}
           <Button
-            title={`Add ${included.length} ${included.length === 1 ? 'medicine' : 'medicines'}`}
-            onPress={save}
-            busy={saving}
-            disabled={!included.length || !included.every(draftReady)}
+            title={draft.include ? 'Skip This Line' : 'Add Back'}
+            kind="plain"
+            size="small"
+            onPress={() => setDrafts((all) => all.map((d, i) => (i === index ? { ...d, include: !d.include } : d)))}
           />
-          <Button title="Retake photo" variant="ghost" onPress={() => { setCapture(null); setDrafts([]); setPhoto(null); }} />
-        </>
-      )}
+        </View>
+      ))}
+
+      {error ? <ErrorText>{error}</ErrorText> : null}
+      <Button title={`Add ${included.length} ${included.length === 1 ? 'Medicine' : 'Medicines'}`} onPress={save} busy={saving} disabled={!included.length || !included.every(draftReady)} />
+      <Button title="Retake" kind="plain" size="medium" onPress={() => { setCapture(null); setDrafts([]); setPhoto(null); }} />
     </Screen>
   );
 }

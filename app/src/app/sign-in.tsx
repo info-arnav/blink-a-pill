@@ -1,36 +1,19 @@
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, errorMessage } from '@/lib/api';
 import { useSession } from '@/lib/session';
 import type { Patient, User } from '@/lib/types';
-import { Body, Button, Card, Field, Notice, Screen, Title } from '@/ui/kit';
+import { Button, ErrorText, Group, Icon, Input, Screen, Txt } from '@/ui/kit';
 import { useColors } from '@/ui/theme';
 
-function Consent({ on, onToggle, title, text }: { on: boolean; onToggle: () => void; title: string; text: string }) {
+function Consent({ on, onToggle, title }: { on: boolean; onToggle: () => void; title: string }) {
   const c = useColors();
   return (
-    <Pressable
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked: on }}
-      onPress={onToggle}
-      style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
-      <View
-        style={{
-          width: 26,
-          height: 26,
-          borderRadius: 7,
-          borderWidth: 2,
-          borderColor: on ? c.brand : c.line,
-          backgroundColor: on ? c.brand : 'transparent',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginTop: 2,
-        }}>
-        {on ? <Text style={{ color: c.onBrand, fontWeight: '800' }}>✓</Text> : null}
-      </View>
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text style={{ color: c.ink, fontSize: 17, fontWeight: '600' }}>{title}</Text>
-        <Text style={{ color: c.inkSoft, fontSize: 15, lineHeight: 21 }}>{text}</Text>
+    <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: on }} onPress={onToggle} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}>
+      <Icon name={on ? 'checkmark.circle.fill' : 'circle'} size={22} color={on ? c.tint : c.tertiaryLabel} fallback={on ? '●' : '○'} />
+      <View style={{ flex: 1 }}>
+        <Txt style="subhead">{title}</Txt>
       </View>
     </Pressable>
   );
@@ -38,6 +21,8 @@ function Consent({ on, onToggle, title, text }: { on: boolean; onToggle: () => v
 
 export default function SignIn() {
   const { signIn } = useSession();
+  const c = useColors();
+  const insets = useSafeAreaInsets();
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
@@ -61,10 +46,6 @@ export default function SignIn() {
   };
 
   const verify = async () => {
-    if (!sharing) {
-      setError('Please agree to how your list is shared, so doctors and pharmacists can check it.');
-      return;
-    }
     setBusy(true);
     setError(null);
     try {
@@ -81,39 +62,46 @@ export default function SignIn() {
   };
 
   return (
-    <Screen>
-      <Title eyebrow="blink-a-pill">One list for all your medicines</Title>
-      <Body muted>We keep every medicine from every doctor in one place, remind you when to take them, and ask your doctor when something looks wrong.</Body>
-      {!sent ? (
-        <Card>
-          <Field label="Your mobile number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" textContentType="telephoneNumber" autoComplete="tel" placeholder="10 digit number" maxLength={14} />
-          <Body small muted>
-            We send a 6 digit code on WhatsApp.
-          </Body>
-          {error ? <Notice tone="error">{error}</Notice> : null}
-          <Button title="Send code" onPress={send} busy={busy} disabled={phone.replace(/\D/g, '').length < 10} />
-        </Card>
-      ) : (
-        <Card>
-          <Field label="6 digit code" value={code} onChangeText={setCode} keyboardType="number-pad" textContentType="oneTimeCode" autoComplete="one-time-code" maxLength={6} />
-          <Field label="Your name" value={name} onChangeText={setName} textContentType="name" autoComplete="name" />
-          <Consent
-            on={sharing}
-            onToggle={() => setSharing((v) => !v)}
-            title="Share my list when I ask"
-            text="Your list is only shown to a doctor, clinic or pharmacy when you send a link or show your card and PIN. Every view is logged."
-          />
-          <Consent
-            on={whatsapp}
-            onToggle={() => setWhatsapp((v) => !v)}
-            title="WhatsApp messages"
-            text="Codes and doctor answers come on WhatsApp. Medicine names are never written in the message."
-          />
-          {error ? <Notice tone="error">{error}</Notice> : null}
-          <Button title="Continue" onPress={verify} busy={busy} disabled={code.length !== 6} />
-          <Button title="Use a different number" variant="ghost" onPress={() => setSent(false)} />
-        </Card>
-      )}
-    </Screen>
+    <View style={{ flex: 1, paddingTop: insets.top + 40, backgroundColor: c.background }}>
+      <Screen>
+        <View style={{ alignItems: 'center', gap: 8 }}>
+          <Icon name="pills.circle.fill" size={64} color={c.tint} fallback="💊" />
+          <Txt style="title1" align="center">
+            blink-a-pill
+          </Txt>
+          <Txt style="callout" color={c.secondaryLabel} align="center">
+            All your medicines. One list.
+          </Txt>
+        </View>
+
+        {!sent ? (
+          <Group footer="We send a code on WhatsApp.">
+            <Input label="Mobile number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" textContentType="telephoneNumber" autoComplete="tel" placeholder="10 digits" maxLength={14} autoFocus />
+          </Group>
+        ) : (
+          <>
+            <Group>
+              <Input label="Code" value={code} onChangeText={setCode} keyboardType="number-pad" textContentType="oneTimeCode" autoComplete="one-time-code" maxLength={6} autoFocus />
+              <Input label="Your name" value={name} onChangeText={setName} textContentType="name" autoComplete="name" />
+            </Group>
+            <Group footer="Your list is shown only when you send a link or show your card and PIN.">
+              <Consent on={sharing} onToggle={() => setSharing((v) => !v)} title="Share my list when I ask" />
+              <Consent on={whatsapp} onToggle={() => setWhatsapp((v) => !v)} title="Doctor replies on WhatsApp" />
+            </Group>
+          </>
+        )}
+
+        {error ? <ErrorText>{error}</ErrorText> : null}
+
+        {!sent ? (
+          <Button title="Continue" onPress={send} busy={busy} disabled={phone.replace(/\D/g, '').length < 10} />
+        ) : (
+          <View style={{ gap: 8 }}>
+            <Button title="Sign In" onPress={verify} busy={busy} disabled={code.length !== 6 || !sharing} />
+            <Button title="Change Number" kind="plain" size="medium" onPress={() => setSent(false)} />
+          </View>
+        )}
+      </Screen>
+    </View>
   );
 }

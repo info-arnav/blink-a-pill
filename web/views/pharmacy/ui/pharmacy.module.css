@@ -1,38 +1,87 @@
-.steps {
-  margin: 0;
-  padding-left: 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.licence {
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-small);
 }
 
-.head {
+.steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.steps li {
+  counter-increment: step;
+  display: flex;
+  gap: var(--space-3);
+  align-items: baseline;
+}
+
+.steps li::before {
+  content: counter(step);
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: inline-grid;
+  place-items: center;
+  border: var(--border-hairline-width) solid var(--color-border);
+  border-radius: var(--radius-round);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-meta);
+  color: var(--color-text-muted);
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: var(--border-hairline-width) solid var(--color-border-soft);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg-raised);
+}
+
+.itemHead {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: var(--space-3);
   align-items: flex-start;
 }
 
-.muted {
-  color: var(--ink-faint);
-  font-size: 15px;
+.itemHead h3 {
+  font-size: var(--font-size-heading-small);
+  line-height: var(--line-height-heading-small);
+}
+
+.meds {
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-small);
 }
 
 .say {
-  background: var(--surface-muted);
-  border-radius: var(--radius-sm);
-  padding: 12px 14px;
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-bg-sunken);
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: 18px;
+  gap: var(--space-1);
+  font-size: var(--font-size-lead);
+  line-height: var(--line-height-lead);
 }
 
-.sayLabel {
-  font-size: 12px;
+.say span {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-meta);
+  letter-spacing: var(--tracking-meta);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-faint);
-  font-weight: 600;
+  color: var(--color-text-subtle);
+}
+
+.answer {
+  font-weight: var(--font-weight-medium);
 }

@@ -1,7 +1,9 @@
 'use client';
 
 import { useActionState } from 'react';
-import { Button, Field, Notice, Stack } from '@/shared/ui/primitives';
+import { Button } from '@/shared/ui/action/Button';
+import { Field } from '@/shared/ui/field/Field';
+import { Stack } from '@/shared/ui/layout/Page';
 import { IDLE } from '@/shared/lib/action-state';
 import { unlockCard } from '../api/actions';
 
@@ -9,7 +11,7 @@ export function PinForm({ token, forPharmacy }: { token: string; forPharmacy: bo
   const [state, action, pending] = useActionState(unlockCard.bind(null, token), IDLE);
   return (
     <form action={action}>
-      <Stack>
+      <Stack gap={4}>
         <Field
           label="Patient PIN"
           name="pin"
@@ -18,11 +20,12 @@ export function PinForm({ token, forPharmacy }: { token: string; forPharmacy: bo
           pattern="\d{6}"
           maxLength={6}
           required
-          hint={forPharmacy ? 'Needed once. After that this shop can open the card without it.' : 'The 6 digit PIN shown on the patient’s card in the app.'}
+          mono
+          error={state.status === 'error' ? state.message : undefined}
+          hint={forPharmacy ? 'Needed once. After that your shop can open this card without it.' : 'Six digits, shown under the QR code in the patient’s app.'}
         />
-        {state.status === 'error' ? <Notice tone="error">{state.message}</Notice> : null}
-        <Button type="submit" disabled={pending} block>
-          {pending ? 'Checking…' : 'Open card'}
+        <Button type="submit" variant="primary" size="large" pending={pending} block>
+          Open card
         </Button>
       </Stack>
     </form>

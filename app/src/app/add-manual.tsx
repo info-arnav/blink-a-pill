@@ -4,7 +4,7 @@ import { api, errorMessage } from '@/lib/api';
 import { usePatient } from '@/lib/session';
 import type { Flag, Medication } from '@/lib/types';
 import { MedicineEditor, draftReady, draftToBody, type Draft } from '@/features/medicine-editor';
-import { Button, Card, Field, Heading, Notice, Screen, Title } from '@/ui/kit';
+import { Button, ErrorText, Group, Input, Screen } from '@/ui/kit';
 
 export default function AddManual() {
   const patient = usePatient();
@@ -45,18 +45,14 @@ export default function AddManual() {
   };
 
   return (
-    <Screen edges={['bottom']}>
-      <Title>Type a medicine</Title>
-      <Card>
-        <MedicineEditor patientId={patient.id} draft={draft} onChange={setDraft} />
-      </Card>
-      <Card>
-        <Heading>Who prescribed it? (optional)</Heading>
-        <Field label="Doctor’s name" value={doctor.name} onChangeText={(name) => setDoctor((d) => ({ ...d, name }))} />
-        <Field label="Doctor’s mobile" value={doctor.phone} onChangeText={(phone) => setDoctor((d) => ({ ...d, phone }))} keyboardType="phone-pad" />
-      </Card>
-      {error ? <Notice tone="error">{error}</Notice> : null}
-      <Button title="Add medicine" onPress={save} busy={saving} disabled={!draftReady(draft)} />
+    <Screen>
+      <MedicineEditor draft={draft} onChange={setDraft} />
+      <Group header="Prescribed By">
+        <Input label="Doctor (optional)" value={doctor.name} onChangeText={(name) => setDoctor((d) => ({ ...d, name }))} />
+        <Input label="Doctor’s mobile" value={doctor.phone} onChangeText={(phone) => setDoctor((d) => ({ ...d, phone }))} keyboardType="phone-pad" />
+      </Group>
+      {error ? <ErrorText>{error}</ErrorText> : null}
+      <Button title="Add Medicine" onPress={save} busy={saving} disabled={!draftReady(draft)} />
     </Screen>
   );
 }

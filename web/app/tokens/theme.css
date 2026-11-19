@@ -1,0 +1,81 @@
+:root {
+  color-scheme: light;
+
+  --color-bg-plane: var(--color-bone-10);
+  --color-bg-sunken: var(--color-bone-50);
+  --color-bg-raised: var(--color-paper-0);
+
+  --color-state-hover: color-mix(in srgb, var(--color-ink) 6%, transparent);
+  --color-state-active: color-mix(in srgb, var(--color-ink) 12%, transparent);
+
+  --color-text-primary: var(--color-carbon-950);
+  --color-text-muted: var(--color-slate-700);
+  --color-text-subtle: var(--color-slate-500);
+
+  --color-border-soft: color-mix(in srgb, var(--color-ink) 9%, transparent);
+  --color-border: color-mix(in srgb, var(--color-ink) 19%, transparent);
+  --color-border-strong: color-mix(in srgb, var(--color-ink) 33%, transparent);
+
+  --color-accent: var(--color-leaf-500);
+  --color-accent-text: var(--color-leaf-700);
+  --color-action-primary: var(--color-leaf-500);
+  --color-action-primary-hover: var(--color-leaf-700);
+  --color-action-primary-text: var(--color-bone-10);
+
+  --color-danger: var(--color-danger-500);
+  --color-danger-text: var(--color-danger-700);
+  --color-warning: var(--color-human-400);
+  --color-warning-text: var(--color-human-700);
+  --color-success: var(--color-success-600);
+  --color-success-text: var(--color-success-700);
+
+  --color-focus-ring: var(--color-leaf-500);
+  --color-selection-bg: var(--color-leaf-200);
+  --shadow-control: 0 1px 2px rgb(0 0 0 / 10%);
+  --shadow-raised: 0 1rem 3rem color-mix(in srgb, var(--color-ink) 10%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --color-bg-plane: var(--color-carbon-950);
+    --color-bg-sunken: var(--color-carbon-1000);
+    --color-bg-raised: var(--color-carbon-850);
+
+    --color-state-hover: color-mix(in srgb, var(--color-bone-50) 7%, transparent);
+    --color-state-active: color-mix(in srgb, var(--color-bone-50) 13%, transparent);
+
+    --color-text-primary: var(--color-bone-50);
+    --color-text-muted: var(--color-mist-200);
+    --color-text-subtle: var(--color-mist-300);
+
+    --color-border-soft: color-mix(in srgb, var(--color-bone-50) 8%, transparent);
+    --color-border: color-mix(in srgb, var(--color-bone-50) 16%, transparent);
+    --color-border-strong: color-mix(in srgb, var(--color-bone-50) 30%, transparent);
+
+    --color-accent: var(--color-leaf-400);
+    --color-accent-text: var(--color-leaf-300);
+    --color-action-primary: var(--color-leaf-500);
+    --color-action-primary-hover: var(--color-leaf-400);
+
+    --color-danger-text: var(--color-danger-300);
+    --color-warning-text: var(--color-human-300);
+    --color-success-text: var(--color-success-300);
+
+    --color-focus-ring: var(--color-leaf-400);
+    --color-selection-bg: var(--color-leaf-700);
+    --shadow-control: 0 1px 2px rgb(0 0 0 / 40%);
+  }
+}
+
+:root {
+  --color-danger-wash: color-mix(in srgb, var(--color-danger) 9%, transparent);
+  --color-danger-line: color-mix(in srgb, var(--color-danger) 35%, transparent);
+  --color-warning-wash: color-mix(in srgb, var(--color-warning) 10%, transparent);
+  --color-warning-line: color-mix(in srgb, var(--color-warning) 38%, transparent);
+  --color-success-wash: color-mix(in srgb, var(--color-success) 10%, transparent);
+  --color-success-line: color-mix(in srgb, var(--color-success) 35%, transparent);
+  --color-accent-wash: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  --color-accent-line: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}

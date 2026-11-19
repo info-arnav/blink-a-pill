@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { api, errorMessage } from '@/lib/api';
 import { usePatient } from '@/lib/session';
@@ -6,20 +7,22 @@ import { useData } from '@/lib/use-data';
 import { MEAL_LABEL, formatDate } from '@/lib/format';
 import type { Medication } from '@/lib/types';
 import { FREQUENCY_OPTIONS, MEAL_OPTIONS } from '@/features/medicine-editor';
-import { Badge, Body, Button, Card, Chips, Field, Heading, Loading, Notice, Row, Screen, Title } from '@/ui/kit';
+import { Button, Cell, ErrorText, Group, Input, Loading, Pills, Screen, Txt } from '@/ui/kit';
+import { useColors } from '@/ui/theme';
 
-const SOURCE: Record<string, string> = { photo: 'Added from a prescription photo', manual: 'Typed in', abha: 'Imported from ABHA records' };
+const SOURCE: Record<string, string> = { photo: 'Prescription photo', manual: 'Typed in', abha: 'ABHA record' };
 
 const REASONS = [
-  { value: 'doctor_stopped' as const, label: 'A doctor stopped it' },
+  { value: 'doctor_stopped' as const, label: 'Doctor stopped it' },
   { value: 'course_finished' as const, label: 'Course finished' },
-  { value: 'not_taking' as const, label: 'I am not taking it' },
+  { value: 'not_taking' as const, label: 'Not taking it' },
   { value: 'added_by_mistake' as const, label: 'Added by mistake' },
 ];
 
 export default function MedicineDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const patient = usePatient();
+  const c = useColors();
   const [editing, setEditing] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [frequency, setFrequency] = useState<(typeof FREQUENCY_OPTIONS)[number]['value']>('OD');
@@ -29,10 +32,7 @@ export default function MedicineDetail() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { data, reload } = useData(async () => {
-    const all = await api<Medication[]>(`/v1/patients/${patient.id}/medications?all=1`);
-    return all.find((m) => m.id === id) ?? null;
-  }, [patient.id, id]);
+  const { data, reload } = useData(async () => (await api<Medication[]>(`/v1/patients/${patient.id}/medications?all=1`)).find((m) => m.id === id) ?? null, [patient.id, id]);
 
   useEffect(() => {
     if (!data) return;
@@ -44,30 +44,11 @@ export default function MedicineDetail() {
   if (!data) return <Loading />;
   const m = data;
 
-  const saveSchedule = async () => {
+  const run = async (work: () => Promise<void>) => {
     setBusy(true);
     setError(null);
     try {
-      await api(`/v1/patients/${patient.id}/medications/${m.id}`, {
-        method: 'PATCH',
-        body: { frequency, meal, duration_days: duration ? Number(duration) : null },
-      });
-      setEditing(false);
-      void reload();
-    } catch (err) {
-      setError(errorMessage(err));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const remove = async () => {
-    if (!reason) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await api(`/v1/patients/${patient.id}/medications/${m.id}/not-taking`, { method: 'POST', body: { reason } });
-      router.back();
+      await work();
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -76,64 +57,84 @@ export default function MedicineDetail() {
   };
 
   return (
-    <Screen edges={['bottom']}>
-      <Title eyebrow={m.status === 'active' ? 'Taking now' : (m.status_reason ?? 'Not taking')}>{m.name}</Title>
-      <Row wrap>
-        {m.is_antibiotic ? <Badge label="Antibiotic" tone="brand" /> : null}
-        {m.days_left != null ? <Badge label={`${m.days_left} days left`} /> : null}
-      </Row>
-      <Card>
-        <Heading>What is in it</Heading>
-        {m.ingredients.length ? (
-          m.ingredients.map((i) => (
-            <Body key={i.key}>
-              {i.display}
-              {i.value ? ` ${i.value} ${i.unit ?? ''}` : ''}
-            </Body>
-          ))
-        ) : (
-          <Notice tone="warn">We could not find what this contains, so it cannot be checked against your other medicines. Show it to your pharmacist.</Notice>
-        )}
-      </Card>
-      <Card>
-        <Heading>How to take it</Heading>
-        <Body>
-          {m.dose_amount} {m.dose_unit}, {m.frequency_label.toLowerCase()}
-          {m.times.length ? ` at ${m.times.join(', ')}` : ''}, {MEAL_LABEL[m.meal]}.
-        </Body>
-        {m.end_date ? <Body muted>Until {formatDate(m.end_date)}.</Body> : <Body muted>No end date. Keep taking it until your doctor says otherwise.</Body>}
-        {m.status === 'active' && !editing ? <Button title="Change how often" variant="secondary" onPress={() => setEditing(true)} /> : null}
-        {editing ? (
-          <>
-            <Chips value={frequency} onChange={setFrequency} options={FREQUENCY_OPTIONS} />
-            <Chips value={meal} onChange={setMeal} options={MEAL_OPTIONS} />
-            <Field label="For how many days" value={duration} onChangeText={(v) => setDuration(v.replace(/\D/g, ''))} keyboardType="number-pad" placeholder="Leave empty if ongoing" />
-            <Body small muted>
-              Only change this to match what your doctor wrote.
-            </Body>
-            <Button title="Save" onPress={saveSchedule} busy={busy} />
-            <Button title="Cancel" variant="ghost" onPress={() => setEditing(false)} />
-          </>
-        ) : null}
-      </Card>
-      <Card>
-        <Heading>Where it came from</Heading>
-        <Body>{m.prescriber ? `Prescribed by ${m.prescriber.name}${m.prescriber.speciality ? ` (${m.prescriber.speciality})` : ''}` : 'Prescriber not recorded'}</Body>
-        {m.clinic ? <Body muted>{m.clinic.name}</Body> : null}
-        {m.prescribed_on ? <Body muted>On {formatDate(m.prescribed_on)}</Body> : null}
-        <Body muted>{SOURCE[m.source]}</Body>
-        <Body muted>Confirmed by: {m.confirmed_by}</Body>
-      </Card>
-      {error ? <Notice tone="error">{error}</Notice> : null}
-      {m.status === 'active' && !removing ? <Button title="I no longer take this" variant="ghost" onPress={() => setRemoving(true)} /> : null}
+    <Screen>
+      <View style={{ gap: 4 }}>
+        <Txt style="title2">{m.name}</Txt>
+        <Txt style="subhead" color={c.secondaryLabel}>
+          {m.status === 'active' ? (m.days_left != null ? `${m.days_left} days left` : 'Ongoing') : (m.status_reason ?? 'Not taking')}
+        </Txt>
+      </View>
+
+      <Group header="Contains" footer={m.ingredients.length ? undefined : 'Unknown contents, so it can’t be checked.'}>
+        {m.ingredients.map((i) => (
+          <Cell key={i.key} title={i.display} value={i.value ? `${i.value} ${i.unit ?? ''}` : undefined} />
+        ))}
+      </Group>
+
+      <Group header="Schedule">
+        <Cell title="Dose" value={`${m.dose_amount} ${m.dose_unit}`} />
+        <Cell title="How often" value={m.frequency_label} />
+        {m.times.length ? <Cell title="Times" value={m.times.join(', ')} /> : null}
+        <Cell title="With food" value={MEAL_LABEL[m.meal]} />
+        <Cell title="Until" value={m.end_date ? formatDate(m.end_date) : 'Ongoing'} />
+        {m.status === 'active' && !editing ? <Cell title="Edit Schedule" tint onPress={() => setEditing(true)} /> : null}
+      </Group>
+
+      {editing ? (
+        <View style={{ gap: 14 }}>
+          <Pills value={frequency} onChange={setFrequency} options={FREQUENCY_OPTIONS} />
+          <Pills value={meal} onChange={setMeal} options={MEAL_OPTIONS} />
+          <Group footer="Match what your doctor wrote.">
+            <Input label="Days (empty if ongoing)" value={duration} onChangeText={(v) => setDuration(v.replace(/\D/g, ''))} keyboardType="number-pad" />
+          </Group>
+          <Button
+            title="Save"
+            busy={busy}
+            onPress={() =>
+              run(async () => {
+                await api(`/v1/patients/${patient.id}/medications/${m.id}`, { method: 'PATCH', body: { frequency, meal, duration_days: duration ? Number(duration) : null } });
+                setEditing(false);
+                await reload();
+              })
+            }
+          />
+          <Button title="Cancel" kind="plain" size="medium" onPress={() => setEditing(false)} />
+        </View>
+      ) : null}
+
+      <Group header="Source">
+        <Cell title="Doctor" value={m.prescriber?.name ?? 'Unknown'} />
+        {m.clinic ? <Cell title="Clinic" value={m.clinic.name} /> : null}
+        {m.prescribed_on ? <Cell title="Date" value={formatDate(m.prescribed_on)} /> : null}
+        <Cell title="Added from" value={SOURCE[m.source]} />
+        <Cell title="Confirmed by" value={m.confirmed_by} />
+      </Group>
+
+      {error ? <ErrorText>{error}</ErrorText> : null}
+
+      {m.status === 'active' && !removing ? (
+        <Group>
+          <Cell title="I No Longer Take This" destructive onPress={() => setRemoving(true)} />
+        </Group>
+      ) : null}
       {removing ? (
-        <Card>
-          <Heading>Why are you removing it?</Heading>
-          <Notice tone="warn">This only updates your list. Do not stop a medicine on your own. Ask your doctor first.</Notice>
-          <Chips value={reason} onChange={setReason} options={REASONS} />
-          <Button title="Update my list" variant="danger" onPress={remove} busy={busy} disabled={!reason} />
-          <Button title="Cancel" variant="ghost" onPress={() => setRemoving(false)} />
-        </Card>
+        <Group header="Why?" footer="This only updates your list. Ask your doctor before stopping any medicine.">
+          <View style={{ padding: 16, gap: 14 }}>
+            <Pills value={reason} onChange={setReason} options={REASONS} />
+            <Button
+              title="Update List"
+              kind="destructive"
+              busy={busy}
+              disabled={!reason}
+              onPress={() =>
+                run(async () => {
+                  await api(`/v1/patients/${patient.id}/medications/${m.id}/not-taking`, { method: 'POST', body: { reason } });
+                  router.back();
+                })
+              }
+            />
+          </View>
+        </Group>
       ) : null}
     </Screen>
   );

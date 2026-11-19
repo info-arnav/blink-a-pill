@@ -1,1 +1,1 @@
-export { PrescriberPage } from './ui/PrescriberPage';
+export { PrescriberPage, metadata } from './ui/PrescriberPage';

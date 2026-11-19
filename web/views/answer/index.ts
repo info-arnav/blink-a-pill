@@ -1,1 +1,1 @@
-export { AnswerPage } from './ui/AnswerPage';
+export { AnswerPage, metadata } from './ui/AnswerPage';

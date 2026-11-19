@@ -1,1 +1,1 @@
-export { AnswerPage as default } from '@/views/answer';
+export { AnswerPage as default, metadata } from '@/views/answer';

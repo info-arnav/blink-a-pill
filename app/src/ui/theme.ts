@@ -1,61 +1,86 @@
-import { useColorScheme } from 'react-native';
+import { DynamicColorIOS, Platform, PlatformColor, useColorScheme, type ColorValue } from 'react-native';
 
-const light = {
-  bg: '#F6F4EF',
-  surface: '#FFFFFF',
-  surfaceMuted: '#EFECE5',
-  ink: '#1D2421',
-  inkSoft: '#4A5550',
-  inkFaint: '#6F7974',
-  line: '#DCD8CF',
-  brand: '#0F6B5C',
-  brandStrong: '#0A5045',
-  brandTint: '#E2F1EC',
-  onBrand: '#FFFFFF',
-  sev1: '#A3341F',
-  sev1Tint: '#FBE9E4',
-  sev2: '#8A5A00',
-  sev2Tint: '#FBF0D9',
-  sev3: '#3F5560',
-  sev3Tint: '#E7EEF1',
-  ok: '#1F6E3A',
-  okTint: '#E3F2E7',
+type Pair = { light: string; dark: string };
+
+const BRAND: Pair = { light: '#0F7A5F', dark: '#3FAE86' };
+
+const FALLBACK = {
+  background: { light: '#F2F2F7', dark: '#000000' },
+  surface: { light: '#FFFFFF', dark: '#1C1C1E' },
+  fill: { light: '#7878801F', dark: '#7878803D' },
+  label: { light: '#000000', dark: '#FFFFFF' },
+  secondaryLabel: { light: '#3C3C4399', dark: '#EBEBF599' },
+  tertiaryLabel: { light: '#3C3C434D', dark: '#EBEBF54D' },
+  separator: { light: '#3C3C434A', dark: '#54545899' },
+  red: { light: '#FF3B30', dark: '#FF453A' },
+  orange: { light: '#FF9500', dark: '#FF9F0A' },
+  green: { light: '#34C759', dark: '#30D158' },
+  blue: { light: '#007AFF', dark: '#0A84FF' },
+} satisfies Record<string, Pair>;
+
+const SYSTEM: Record<keyof typeof FALLBACK, string> = {
+  background: 'systemGroupedBackground',
+  surface: 'secondarySystemGroupedBackground',
+  fill: 'tertiarySystemFill',
+  label: 'label',
+  secondaryLabel: 'secondaryLabel',
+  tertiaryLabel: 'tertiaryLabel',
+  separator: 'separator',
+  red: 'systemRed',
+  orange: 'systemOrange',
+  green: 'systemGreen',
+  blue: 'systemBlue',
 };
 
-const dark: typeof light = {
-  bg: '#111614',
-  surface: '#18201D',
-  surfaceMuted: '#1F2925',
-  ink: '#E8EEEB',
-  inkSoft: '#B4C0BA',
-  inkFaint: '#8E9A94',
-  line: '#2C3833',
-  brand: '#4FB8A4',
-  brandStrong: '#79D2C0',
-  brandTint: '#17332D',
-  onBrand: '#06201B',
-  sev1: '#F19A84',
-  sev1Tint: '#3A1F18',
-  sev2: '#E8C06B',
-  sev2Tint: '#33290F',
-  sev3: '#A9C0CB',
-  sev3Tint: '#1D2A30',
-  ok: '#86D39D',
-  okTint: '#173022',
-};
+export type Colors = Record<keyof typeof FALLBACK | 'tint' | 'onTint' | 'tintWash' | 'redWash' | 'orangeWash' | 'greenWash', ColorValue>;
 
-export type Colors = typeof light;
+const wash = (pair: Pair, alpha: string): Pair => ({ light: `${pair.light}${alpha}`, dark: `${pair.dark}${alpha}` });
+
+function build(scheme: 'light' | 'dark'): Colors {
+  const pick = (pair: Pair): ColorValue => (Platform.OS === 'ios' ? DynamicColorIOS(pair) : pair[scheme]);
+  const system = Object.fromEntries(
+    Object.entries(SYSTEM).map(([key, name]) => [key, Platform.OS === 'ios' ? PlatformColor(name) : FALLBACK[key as keyof typeof FALLBACK][scheme]]),
+  ) as Record<keyof typeof FALLBACK, ColorValue>;
+  return {
+    ...system,
+    tint: pick(BRAND),
+    onTint: '#FFFFFF',
+    tintWash: pick(wash(BRAND, '1F')),
+    redWash: pick(wash(FALLBACK.red, '1F')),
+    orangeWash: pick(wash(FALLBACK.orange, '24')),
+    greenWash: pick(wash(FALLBACK.green, '24')),
+  };
+}
+
+const light = build('light');
+const dark = build('dark');
 
 export function useColors(): Colors {
   return useColorScheme() === 'dark' ? dark : light;
 }
 
-export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
-export const radius = { sm: 10, md: 14, lg: 20, pill: 999 } as const;
-export const type = { small: 15, body: 18, large: 20, title: 26, hero: 32 } as const;
+export const BRAND_HEX = BRAND;
 
-export function severityColors(c: Colors, severity: number) {
-  if (severity === 1) return { fg: c.sev1, bg: c.sev1Tint };
-  if (severity === 2) return { fg: c.sev2, bg: c.sev2Tint };
-  return { fg: c.sev3, bg: c.sev3Tint };
+export const text = {
+  largeTitle: { fontSize: 34, lineHeight: 41, fontWeight: '700' },
+  title1: { fontSize: 28, lineHeight: 34, fontWeight: '700' },
+  title2: { fontSize: 22, lineHeight: 28, fontWeight: '700' },
+  title3: { fontSize: 20, lineHeight: 25, fontWeight: '600' },
+  headline: { fontSize: 17, lineHeight: 22, fontWeight: '600' },
+  body: { fontSize: 17, lineHeight: 22, fontWeight: '400' },
+  callout: { fontSize: 16, lineHeight: 21, fontWeight: '400' },
+  subhead: { fontSize: 15, lineHeight: 20, fontWeight: '400' },
+  footnote: { fontSize: 13, lineHeight: 18, fontWeight: '400' },
+  caption: { fontSize: 12, lineHeight: 16, fontWeight: '400' },
+} as const;
+
+export type TextStyleName = keyof typeof text;
+
+export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 32 } as const;
+export const radius = { control: 12, group: 12, pill: 999 } as const;
+
+export function severityColor(c: Colors, severity: number) {
+  if (severity === 1) return { fg: c.red, bg: c.redWash };
+  if (severity === 2) return { fg: c.orange, bg: c.orangeWash };
+  return { fg: c.secondaryLabel, bg: c.fill };
 }

@@ -1,7 +1,14 @@
 import { useState } from 'react';
+import { View } from 'react-native';
 import { api, errorMessage } from '@/lib/api';
 import type { Patient } from '@/lib/types';
-import { Body, Button, Card, Chips, Field, Notice } from '@/ui/kit';
+import { Button, ErrorText, Group, Input, Pills } from '@/ui/kit';
+
+const GENDERS = [
+  { value: 'female' as const, label: 'Female' },
+  { value: 'male' as const, label: 'Male' },
+  { value: 'other' as const, label: 'Other' },
+];
 
 export function ProfileForm({ forSelf, onDone }: { forSelf: boolean; onDone: (patient: Patient) => void }) {
   const [name, setName] = useState('');
@@ -40,28 +47,17 @@ export function ProfileForm({ forSelf, onDone }: { forSelf: boolean; onDone: (pa
   const valid = name.trim().length > 0 && Number(age) > 0 && Number(age) < 121 && gender;
 
   return (
-    <Card>
-      <Field label={forSelf ? 'Your full name' : 'Their full name'} value={name} onChangeText={setName} textContentType="name" />
-      <Field label="Age" value={age} onChangeText={setAge} keyboardType="number-pad" maxLength={3} />
-      <Body bold>Gender</Body>
-      <Chips
-        value={gender}
-        onChange={setGender}
-        options={[
-          { value: 'female', label: 'Female' },
-          { value: 'male', label: 'Male' },
-          { value: 'other', label: 'Other' },
-        ]}
-      />
-      {!forSelf ? (
-        <>
-          <Field label="Relation to you" value={relation} onChangeText={setRelation} placeholder="Father, mother, grandparent" />
-          <Field label="Their mobile number (optional)" value={phone} onChangeText={setPhone} keyboardType="phone-pad" hint="Doctor answers are sent to this number. Leave empty to use yours." />
-        </>
-      ) : null}
-      <Field label="ABHA address (optional)" value={abha} onChangeText={setAbha} autoCapitalize="none" placeholder="name@abdm" hint="You can link ABHA records later from My record." />
-      {error ? <Notice tone="error">{error}</Notice> : null}
-      <Button title="Save" onPress={save} busy={busy} disabled={!valid} />
-    </Card>
+    <View style={{ gap: 20 }}>
+      <Group>
+        <Input label="Full name" value={name} onChangeText={setName} textContentType="name" autoComplete={forSelf ? 'name' : 'off'} />
+        <Input label="Age" value={age} onChangeText={setAge} keyboardType="number-pad" maxLength={3} />
+        {!forSelf ? <Input label="Relation" value={relation} onChangeText={setRelation} placeholder="Father" /> : null}
+        {!forSelf ? <Input label="Their mobile (optional)" value={phone} onChangeText={setPhone} keyboardType="phone-pad" /> : null}
+        <Input label="ABHA address (optional)" value={abha} onChangeText={setAbha} autoCapitalize="none" autoCorrect={false} placeholder="name@abdm" />
+      </Group>
+      <Pills value={gender} onChange={setGender} options={GENDERS} />
+      {error ? <ErrorText>{error}</ErrorText> : null}
+      <Button title="Continue" onPress={save} busy={busy} disabled={!valid} />
+    </View>
   );
 }

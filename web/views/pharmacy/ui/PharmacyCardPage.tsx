@@ -1,12 +1,20 @@
 import { Suspense } from 'react';
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { api } from '@/shared/api/server';
-import { Badge, Card, Notice, PageTitle, Shell, Skeleton, severityTone } from '@/shared/ui/primitives';
+import { NOINDEX } from '@/shared/lib/seo';
 import { formatDateTime, genderLabel } from '@/shared/lib/format';
 import { pharmacySession } from '@/shared/session';
+import { Page, PageTitle, Section, Stack } from '@/shared/ui/layout/Page';
+import { Mono } from '@/shared/ui/data/Row';
+import { Badge, severityTone } from '@/shared/ui/status/Badge';
+import { Callout } from '@/shared/ui/status/Callout';
+import { Skeleton } from '@/shared/ui/status/Skeleton';
 import { PinForm } from '@/features/card-access';
 import { FlagActions, MedicineCheck } from '@/features/pharmacy-check';
 import styles from './pharmacy.module.css';
+
+export const metadata: Metadata = { title: 'Pharmacy checkpoint', ...NOINDEX };
 
 type Checkpoint =
   | { needs_pin: true }
@@ -25,66 +33,86 @@ async function Content({ params }: { params: Promise<{ token: string }> }) {
   const session = await pharmacySession();
   if (!session) redirect(`/pharmacy?next=/pharmacy/card/${token}`);
   const view = await api<Checkpoint>(`/v1/pharmacy/cards/${encodeURIComponent(token)}`, { token: session.token });
-  if (!view.ok) return <Notice tone="error">{view.message}</Notice>;
+  if (!view.ok) return <Callout tone="danger" title={view.message} />;
   const v = view.data;
   if (v.needs_pin) {
     return (
       <>
-        <PageTitle eyebrow={session.name} title="First visit: enter the patient’s PIN" />
-        <Card>
-          <PinForm token={token} forPharmacy />
-        </Card>
+        <PageTitle overline={session.name} title="First visit: enter the patient’s PIN" description="Only needed once for your shop." />
+        <PinForm token={token} forPharmacy />
       </>
     );
   }
   return (
     <>
       <PageTitle
-        eyebrow={`${session.name} · checkpoint`}
+        overline={`${session.name} · checkpoint`}
         title={v.nothing_open ? 'Nothing open' : `${v.open.length} open ${v.open.length === 1 ? 'concern' : 'concerns'}`}
-        lead={`${v.patient.full_name}, ${v.patient.age} · ${genderLabel(v.patient.gender)} · ${v.medication_count} medicines on their list`}
+        description={`${v.patient.full_name}, ${v.patient.age}, ${genderLabel(v.patient.gender).toLowerCase()} · ${v.medication_count} medicines on their list`}
       />
-      {v.nothing_open ? <Notice tone="ok">There is nothing waiting for a doctor. Carry on as usual.</Notice> : null}
-      {v.open.map((f) => (
-        <Card key={f.id}>
-          <div className={styles.head}>
-            <strong>{f.title}</strong>
-            <Badge tone={severityTone(f.severity)}>{f.status_label}</Badge>
-          </div>
-          <div className={styles.muted}>Medicines: {f.medicines.join(', ')}</div>
-          <div className={styles.say}>
-            <span className={styles.sayLabel}>One line to say</span>
-            {f.say}
-          </div>
-          <FlagActions token={token} flagId={f.id} />
-        </Card>
-      ))}
-      {v.answered.map((f) => (
-        <Card key={f.id} eyebrow="Doctor’s answer">
-          <strong>{f.title}</strong>
-          <div className={styles.muted}>Medicines: {f.medicines.join(', ')}</div>
-          <Notice tone="ok">{f.answer}</Notice>
-          <div className={styles.muted}>
-            {f.by}
-            {f.registration ? `, Reg. ${f.registration}` : ''} · {formatDateTime(f.at)}
-          </div>
-          <FlagActions token={token} flagId={f.id} answered />
-        </Card>
-      ))}
-      <Card title="Not sure about one medicine?">
+      {v.nothing_open ? <Callout tone="success" title="Nothing is waiting for a doctor. Carry on as usual." /> : null}
+      {v.open.length ? (
+        <Section title="Open concerns">
+          <Stack gap={3}>
+            {v.open.map((f) => (
+              <article key={f.id} className={styles.item}>
+                <header className={styles.itemHead}>
+                  <h3>{f.title}</h3>
+                  <Badge tone={severityTone(f.severity)}>{f.status_label}</Badge>
+                </header>
+                <p className={styles.meds}>{f.medicines.join(' and ')}</p>
+                <blockquote className={styles.say}>
+                  <span>Say to the patient</span>
+                  {f.say}
+                </blockquote>
+                <FlagActions token={token} flagId={f.id} />
+              </article>
+            ))}
+          </Stack>
+        </Section>
+      ) : null}
+      {v.answered.length ? (
+        <Section title="Doctor’s answers">
+          <Stack gap={3}>
+            {v.answered.map((f) => (
+              <article key={f.id} className={styles.item}>
+                <header className={styles.itemHead}>
+                  <h3>{f.title}</h3>
+                  <Badge tone="success">Answered</Badge>
+                </header>
+                <p className={styles.meds}>{f.medicines.join(' and ')}</p>
+                <p className={styles.answer}>{f.answer}</p>
+                <p className={styles.meds}>
+                  {f.by}
+                  {f.registration ? (
+                    <>
+                      {' · Reg. '}
+                      <Mono>{f.registration}</Mono>
+                    </>
+                  ) : null}
+                  {' · '}
+                  {formatDateTime(f.at)}
+                </p>
+                <FlagActions token={token} flagId={f.id} answered />
+              </article>
+            ))}
+          </Stack>
+        </Section>
+      ) : null}
+      <Section title="Check one medicine">
         <MedicineCheck token={token} />
-      </Card>
-      <Notice tone="info">{v.note} Billing never waits on this page.</Notice>
+      </Section>
+      <p className={styles.meds}>A limited check, not an all-clear.</p>
     </>
   );
 }
 
 export function PharmacyCardPage({ params }: { params: Promise<{ token: string }> }) {
   return (
-    <Shell note="Pharmacy checkpoint">
-      <Suspense fallback={<Skeleton />}>
+    <Page context="Pharmacy checkpoint">
+      <Suspense fallback={<Skeleton lines={6} />}>
         <Content params={params} />
       </Suspense>
-    </Shell>
+    </Page>
   );
 }

@@ -1,85 +1,45 @@
-:root {
-  --bg: #f6f4ef;
-  --surface: #ffffff;
-  --surface-muted: #efece5;
-  --ink: #1d2421;
-  --ink-soft: #4a5550;
-  --ink-faint: #7b8580;
-  --line: #dcd8cf;
-  --brand: #0f6b5c;
-  --brand-strong: #0a5045;
-  --brand-tint: #e2f1ec;
-  --on-brand: #ffffff;
-  --sev1: #a3341f;
-  --sev1-tint: #fbe9e4;
-  --sev2: #8a5a00;
-  --sev2-tint: #fbf0d9;
-  --sev3: #3f5560;
-  --sev3-tint: #e7eef1;
-  --ok: #1f6e3a;
-  --ok-tint: #e3f2e7;
-  --radius: 14px;
-  --radius-sm: 9px;
-  --shadow: 0 1px 2px rgb(20 30 25 / 6%), 0 4px 16px rgb(20 30 25 / 5%);
-  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', Arial, sans-serif;
-  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #111614;
-    --surface: #18201d;
-    --surface-muted: #1f2925;
-    --ink: #e8eeeb;
-    --ink-soft: #b4c0ba;
-    --ink-faint: #85918b;
-    --line: #2c3833;
-    --brand: #4fb8a4;
-    --brand-strong: #79d2c0;
-    --brand-tint: #17332d;
-    --on-brand: #06201b;
-    --sev1: #f19a84;
-    --sev1-tint: #3a1f18;
-    --sev2: #e8c06b;
-    --sev2-tint: #33290f;
-    --sev3: #a9c0cb;
-    --sev3-tint: #1d2a30;
-    --ok: #86d39d;
-    --ok-tint: #173022;
-    --shadow: none;
-    color-scheme: dark;
-  }
-}
-
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-html,
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
-  padding: 0;
-}
-
-body {
-  background: var(--bg);
-  color: var(--ink);
-  font-family: var(--font);
-  font-size: 17px;
-  line-height: 1.5;
+  min-height: 100dvh;
+  background: var(--color-bg-plane);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-ui);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
   -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'ss01', 'cv11';
 }
 
-a {
-  color: var(--brand);
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
 }
 
 h1,
 h2,
 h3 {
-  line-height: 1.25;
-  margin: 0;
+  font-family: var(--font-family-display);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--tracking-heading);
+}
+
+a {
+  color: var(--color-accent-text);
+  text-underline-offset: 0.2em;
 }
 
 button,
@@ -90,7 +50,20 @@ textarea {
   color: inherit;
 }
 
+::selection {
+  background: var(--color-selection-bg);
+}
+
 :focus-visible {
-  outline: 3px solid var(--brand);
+  outline: var(--border-emphasis-width) solid var(--color-focus-ring);
   outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -1,0 +1,16 @@
+.facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--space-4) var(--space-6);
+}
+
+.facts dt {
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-small);
+}
+
+.facts dd {
+  margin: 2px 0 0;
+  font-weight: var(--font-weight-medium);
+}

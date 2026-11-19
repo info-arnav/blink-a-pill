@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { Platform, useColorScheme } from 'react-native';
 import { SessionProvider, useSession } from '@/lib/session';
 
 SplashScreen.preventAutoHideAsync();
@@ -18,7 +18,7 @@ function Navigator() {
   const hasPatient = patients.length > 0;
 
   return (
-    <Stack screenOptions={{ headerBackButtonDisplayMode: 'minimal' }}>
+    <Stack screenOptions={{ headerBackButtonDisplayMode: 'minimal', headerShadowVisible: false, headerTransparent: Platform.OS === 'ios' }}>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="sign-in" options={{ headerShown: false }} />
       </Stack.Protected>
@@ -27,14 +27,14 @@ function Navigator() {
       </Stack.Protected>
       <Stack.Protected guard={signedIn && hasPatient}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="add-photo" options={{ title: 'Add from a photo', presentation: 'modal' }} />
-        <Stack.Screen name="add-manual" options={{ title: 'Type a medicine', presentation: 'modal' }} />
-        <Stack.Screen name="medicine/[id]" options={{ title: 'Medicine' }} />
-        <Stack.Screen name="concern/[id]" options={{ title: 'Something to check' }} />
-        <Stack.Screen name="lab" options={{ title: 'Add a test result', presentation: 'modal' }} />
-        <Stack.Screen name="abha" options={{ title: 'Link ABHA records', presentation: 'modal' }} />
-        <Stack.Screen name="people" options={{ title: 'Family and caregivers' }} />
-        <Stack.Screen name="profile-new" options={{ title: 'Add a person', presentation: 'modal' }} />
+        <Stack.Screen name="add-photo" options={{ title: 'Scan Prescription', presentation: 'modal' }} />
+        <Stack.Screen name="add-manual" options={{ title: 'Add Medicine', presentation: 'modal' }} />
+        <Stack.Screen name="medicine/[id]" options={{ title: '' }} />
+        <Stack.Screen name="concern/[id]" options={{ title: 'Check With Doctor' }} />
+        <Stack.Screen name="lab" options={{ title: 'Add Result', presentation: 'modal' }} />
+        <Stack.Screen name="abha" options={{ title: 'ABHA Records', presentation: 'modal' }} />
+        <Stack.Screen name="people" options={{ title: 'Family' }} />
+        <Stack.Screen name="profile-new" options={{ title: 'Add Person', presentation: 'modal' }} />
       </Stack.Protected>
     </Stack>
   );

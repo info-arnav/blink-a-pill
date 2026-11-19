@@ -1,9 +1,15 @@
 import { Suspense } from 'react';
+import type { Metadata } from 'next';
 import { api } from '@/shared/api/server';
-import { Card, Notice, PageTitle, Shell, Skeleton } from '@/shared/ui/primitives';
-import { ConcernCard, LabGrid, MedicationList, PatientLine, Timeline, type Flag, type PatientRecord } from '@/entities/record';
+import { NOINDEX } from '@/shared/lib/seo';
+import { Page, PageTitle, Section } from '@/shared/ui/layout/Page';
+import { Row, RowList } from '@/shared/ui/data/Row';
+import { Callout } from '@/shared/ui/status/Callout';
+import { Skeleton } from '@/shared/ui/status/Skeleton';
+import { Concern, LabFacts, MedicationRows, PatientFacts, Timeline, type Flag, type PatientRecord } from '@/entities/record';
 import { DecisionForm } from '@/features/prescriber-decision';
-import styles from './prescriber.module.css';
+
+export const metadata: Metadata = { title: 'Decision needed', ...NOINDEX };
 
 type View = {
   doctor: { name: string | null; speciality: string | null; needs_registration: boolean };
@@ -15,52 +21,47 @@ type View = {
 async function Content({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const view = await api<View>(`/v1/links/prescriber/${encodeURIComponent(token)}`);
-  if (!view.ok) return <Notice tone="error">{view.message}</Notice>;
+  if (!view.ok) return <Callout tone="danger" title={view.message} />;
   const { doctor, concern, record, answered } = view.data;
+  const decided = answered || Boolean(concern.decision);
   return (
     <>
       <PageTitle
-        eyebrow={`For ${doctor.name ?? 'the prescriber'}`}
-        title="One patient needs your decision"
-        lead="Please confirm whether this combination is intended. Nothing changes for the patient unless you say so."
+        overline={doctor.name ? `For ${doctor.name}` : 'For the prescriber'}
+        title={decided ? 'Decision recorded' : 'One patient needs your decision'}
+        description="Is this combination intended?"
       />
-      <Card>
-        <PatientLine patient={record.patient} />
-        {record.conditions.length ? <div className={styles.muted}>Conditions: {record.conditions.map((c) => c.name).join(', ')}</div> : null}
-      </Card>
-      <ConcernCard flag={concern} audience="clinician" medicationNames={concern.medications.map((m) => m.name)} />
-      <Card title={answered || concern.decision ? 'Decision recorded' : 'Your decision'}>
-        {answered || concern.decision ? (
-          <Notice tone="ok">{concern.decision?.text ?? 'This has already been answered.'}</Notice>
-        ) : (
+      <PatientFacts patient={record.patient} conditions={record.conditions} />
+      <Concern flag={concern} medicationNames={concern.medications.map((m) => m.name)} />
+      {!decided ? (
+        <Section title="Your decision">
           <DecisionForm
             token={token}
             doctorName={doctor.name}
             needsRegistration={doctor.needs_registration}
             medications={concern.medications.filter((m) => m.status === 'active').map((m) => ({ id: m.id, name: m.name }))}
           />
-        )}
-      </Card>
-      <Card title="Full current list" eyebrow="Who confirmed each entry">
-        <MedicationList medications={record.medications} flagged={concern.medication_ids} />
-      </Card>
-      <Card title="Latest values">
-        <LabGrid labs={record.labs} />
-      </Card>
+        </Section>
+      ) : null}
+      <Section title="Current medicines">
+        <MedicationRows medications={record.medications} flagged={concern.medication_ids} />
+      </Section>
+      <Section title="Latest results">
+        <LabFacts labs={record.labs} />
+      </Section>
       {concern.events?.length ? (
-        <Card title="What has happened so far">
+        <Section title="Audit trail">
           <Timeline events={concern.events} />
-        </Card>
+        </Section>
       ) : null}
       {record.flags.length ? (
-        <Card title="Other notes on this patient">
-          {record.flags.map((f) => (
-            <div key={f.id} className={styles.other}>
-              <strong>{f.title}</strong>
-              <span className={styles.muted}>{f.decision?.text ?? f.status_label}</span>
-            </div>
-          ))}
-        </Card>
+        <Section title="Other concerns">
+          <RowList>
+            {record.flags.map((f) => (
+              <Row key={f.id} title={f.title} meta={f.decision?.text ?? f.status_label} />
+            ))}
+          </RowList>
+        </Section>
       ) : null}
     </>
   );
@@ -68,10 +69,10 @@ async function Content({ params }: { params: Promise<{ token: string }> }) {
 
 export function PrescriberPage({ params }: { params: Promise<{ token: string }> }) {
   return (
-    <Shell note="Prescriber decision">
-      <Suspense fallback={<Skeleton />}>
+    <Page context="Prescriber decision">
+      <Suspense fallback={<Skeleton lines={8} />}>
         <Content params={params} />
       </Suspense>
-    </Shell>
+    </Page>
   );
 }

@@ -1,7 +1,11 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
-import { Badge, Button, Field, Notice, Stack, severityTone } from '@/shared/ui/primitives';
+import { Button } from '@/shared/ui/action/Button';
+import { Field } from '@/shared/ui/field/Field';
+import { Badge, severityTone } from '@/shared/ui/status/Badge';
+import { Callout } from '@/shared/ui/status/Callout';
+import { Stack } from '@/shared/ui/layout/Page';
 import { checkMedicine, searchMedicine, type Candidate, type MedicineCheck as Result } from '../api/actions';
 import styles from './check.module.css';
 
@@ -12,12 +16,10 @@ export function MedicineCheck({ token }: { token: string }) {
   const [pending, start] = useTransition();
 
   useEffect(() => {
-    if (query.trim().length < 2) return;
-    const id = setTimeout(() => {
-      start(async () => setCandidates(await searchMedicine(query)));
-    }, 250);
+    if (query.trim().length < 2 || result) return;
+    const id = setTimeout(() => start(async () => setCandidates(await searchMedicine(query))), 250);
     return () => clearTimeout(id);
-  }, [query]);
+  }, [query, result]);
 
   const pick = (c: Candidate) =>
     start(async () => {
@@ -26,12 +28,19 @@ export function MedicineCheck({ token }: { token: string }) {
       setResult(await checkMedicine(token, c.id));
     });
 
+  const reset = () => {
+    setResult(null);
+    setQuery('');
+    setCandidates([]);
+  };
+
   return (
-    <Stack>
+    <Stack gap={3}>
       <Field
-        label="Check one medicine against this patient's list"
-        placeholder="Type a brand, for example Combiflam"
+        label="Medicine"
+        placeholder="Brand name, for example Combiflam"
         value={query}
+        autoComplete="off"
         onChange={(e) => {
           setQuery(e.target.value);
           setResult(null);
@@ -39,34 +48,36 @@ export function MedicineCheck({ token }: { token: string }) {
         }}
       />
       {candidates.length ? (
-        <ul className={styles.options}>
+        <ul className={styles.options} role="listbox" aria-label="Matching medicines">
           {candidates.map((c) => (
             <li key={c.id}>
-              <button type="button" className={styles.option} onClick={() => pick(c)}>
-                <strong>{c.name}</strong>
-                <span>{c.composition}</span>
+              <button type="button" role="option" aria-selected={false} className={styles.option} onClick={() => pick(c)}>
+                <span>{c.name}</span>
+                <span className={styles.composition}>{c.composition}</span>
               </button>
             </li>
           ))}
         </ul>
       ) : null}
-      {pending ? <span className={styles.muted}>Checking…</span> : null}
-      {result && 'error' in result ? <Notice tone="error">{result.error}</Notice> : null}
+      {pending && !candidates.length ? <span className={styles.muted}>Checking…</span> : null}
+      {result && 'error' in result ? <Callout tone="danger" title={result.error} /> : null}
       {result && !('error' in result) ? (
-        <div className={styles.result}>
-          <strong>{result.medicine.name}</strong>
-          <span className={styles.muted}>{result.medicine.composition}</span>
+        <Stack gap={3}>
           {result.overlaps.map((o) => (
             <div key={o.title + o.detail} className={styles.overlap}>
               <Badge tone={severityTone(o.severity)}>{o.title}</Badge>
               <span>{o.detail}</span>
             </div>
           ))}
-          <Notice tone={result.overlaps.length ? 'warn' : 'info'}>{result.note}</Notice>
-          <Button type="button" variant="secondary" onClick={() => { setResult(null); setQuery(''); }}>
-            Check another
-          </Button>
-        </div>
+          <Callout tone={result.overlaps.length ? 'warning' : 'info'} title={`${result.medicine.name}: ${result.medicine.composition}`}>
+            {result.note}
+          </Callout>
+          <div>
+            <Button variant="quiet" onClick={reset}>
+              Check another medicine
+            </Button>
+          </div>
+        </Stack>
       ) : null}
     </Stack>
   );

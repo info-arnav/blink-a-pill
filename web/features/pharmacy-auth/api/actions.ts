@@ -12,7 +12,7 @@ export async function requestPharmacyCode(_prev: ActionState, form: FormData): P
   return { status: 'ok', data: { phone: phone ?? '' } };
 }
 
-export async function verifyPharmacyCode(_prev: ActionState, form: FormData): Promise<ActionState> {
+export async function verifyPharmacyCode(prev: ActionState, form: FormData): Promise<ActionState> {
   const result = await api<{ token: string; pharmacy: { name: string; licence_number: string } }>('/v1/pharmacy/auth/verify', {
     method: 'POST',
     body: {
@@ -24,7 +24,8 @@ export async function verifyPharmacyCode(_prev: ActionState, form: FormData): Pr
     },
   });
   if (!result.ok) {
-    return { status: 'error', message: result.message, data: { register: result.code === 'REGISTRATION_REQUIRED' } };
+    const prompt = result.code === 'REGISTRATION_REQUIRED';
+    return { status: 'error', message: prompt ? undefined : result.message, data: { register: prompt || Boolean(prev.data?.register) } };
   }
   await startPharmacySession({ token: result.data.token, name: result.data.pharmacy.name, licence: result.data.pharmacy.licence_number });
   const next = text(form, 'next');

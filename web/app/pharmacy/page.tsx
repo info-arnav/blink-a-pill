@@ -1,1 +1,1 @@
-export { PharmacyHome as default } from '@/views/pharmacy';
+export { PharmacyHome as default, metadata } from '@/views/pharmacy';

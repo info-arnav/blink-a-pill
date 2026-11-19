@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useSession } from '@/lib/session';
 import type { Patient } from '@/lib/types';
 import { ProfileForm } from '@/features/profile-form';
-import { Body, Screen, Title } from '@/ui/kit';
+import { Screen } from '@/ui/kit';
 
 export default function ProfileNew() {
   const { refresh, choose } = useSession();
@@ -14,9 +14,7 @@ export default function ProfileNew() {
   };
 
   return (
-    <Screen edges={['bottom']}>
-      <Title>Add a person</Title>
-      <Body muted>You can switch between people at the top of every screen.</Body>
+    <Screen>
       <ProfileForm forSelf={false} onDone={done} />
     </Screen>
   );

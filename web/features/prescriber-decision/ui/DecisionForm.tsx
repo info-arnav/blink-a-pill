@@ -1,8 +1,11 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useActionState, useEffect, useState } from 'react';
-import { Button, Choice, Field, Notice, Stack } from '@/shared/ui/primitives';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/shared/ui/action/Button';
+import { Field, Fieldset, RadioCard, Select } from '@/shared/ui/field/Field';
+import { Callout } from '@/shared/ui/status/Callout';
+import { Stack } from '@/shared/ui/layout/Page';
 import { IDLE } from '@/shared/lib/action-state';
 import { submitDecision } from '../api/actions';
 import styles from './decision.module.css';
@@ -21,78 +24,67 @@ export function DecisionForm({
   medications: Med[];
 }) {
   const [state, action, pending] = useActionState(submitDecision.bind(null, token), IDLE);
+  const [decision, setDecision] = useState('');
+  const [message, setMessage] = useState('');
   const router = useRouter();
+
   useEffect(() => {
     if (state.status === 'ok') router.refresh();
   }, [state.status, router]);
-  const [decision, setDecision] = useState<string>('');
-  const [message, setMessage] = useState<string>('');
 
   if (state.status === 'ok') {
-    return (
-      <Notice tone="ok">
-        <strong>Recorded with your name and registration number.</strong>
-        <br />
-        The patient will see: “{state.message}”
-      </Notice>
-    );
+    return <Callout tone="success" title="Recorded with your name and registration number.">The patient will see: “{state.message}”</Callout>;
   }
 
   return (
-    <form action={action} className={styles.form}>
-      {needsRegistration ? (
-        <fieldset className={styles.group}>
-          <legend className={styles.legend}>Your details (asked once, then remembered)</legend>
-          <Stack>
-            <Field label="Your name" name="name" defaultValue={doctorName ?? ''} required maxLength={120} />
-            <Field label="Medical registration number" name="registration_number" required pattern="[A-Za-z0-9/\-]{3,30}" hint="As issued by your State Medical Council or the NMC" />
-            <Field label="Council" name="registration_council" placeholder="Delhi Medical Council" maxLength={80} />
-          </Stack>
-        </fieldset>
-      ) : null}
+    <form
+      action={action}
+      onChange={(event) => {
+        const target = event.target as unknown as HTMLInputElement;
+        if (target.name === 'decision') setDecision(target.value);
+        if (target.name === 'patient_message') setMessage(target.value);
+      }}>
+      <Stack gap={6}>
+        {needsRegistration ? (
+          <Fieldset legend="Your details" description="Asked once.">
+            <Field label="Name" name="name" defaultValue={doctorName ?? ''} required maxLength={120} autoComplete="name" />
+            <div className={styles.pair}>
+              <Field label="Registration number" name="registration_number" required pattern="[A-Za-z0-9/\-]{3,30}" mono />
+              <Field label="Council" name="registration_council" placeholder="Delhi Medical Council" maxLength={80} />
+            </div>
+          </Fieldset>
+        ) : null}
 
-      <fieldset className={styles.group} onChange={(e) => setDecision((e.target as unknown as HTMLInputElement).value)}>
-        <legend className={styles.legend}>Is this combination intended?</legend>
-        <Stack>
-          <Choice name="decision" value="intended" title="Intended" text="The patient is told to continue as prescribed." required />
-          <Choice name="decision" value="not_intended" title="Not intended" text="You choose what the patient is told next." />
-        </Stack>
-      </fieldset>
+        <Fieldset legend="Is this combination intended?">
+          <RadioCard name="decision" value="intended" title="Intended" detail="The patient is told to continue as prescribed." required />
+          <RadioCard name="decision" value="not_intended" title="Not intended" detail="You choose what the patient is told next." />
+        </Fieldset>
 
-      {decision === 'not_intended' ? (
-        <fieldset className={styles.group} onChange={(e) => {
-          const target = e.target as unknown as HTMLInputElement;
-          if (target.name === 'patient_message') setMessage(target.value);
-        }}>
-          <legend className={styles.legend}>What should the patient be told?</legend>
-          <Stack>
-            <Choice name="patient_message" value="hold_until_contact" title="Do not take one medicine until you hear from us" required />
-            <Choice name="patient_message" value="review_next_visit" title="Keep everything as it is, review at the next visit" />
+        {decision === 'not_intended' ? (
+          <Fieldset legend="What should the patient be told?">
+            <RadioCard name="patient_message" value="hold_until_contact" title="Do not take one medicine until you hear from us" required />
+            <RadioCard name="patient_message" value="review_next_visit" title="Keep everything as it is, review at the next visit" />
             {message === 'hold_until_contact' ? (
-              <label className={styles.select}>
-                <span>Which medicine should they hold?</span>
-                <select name="hold_medication_id" required defaultValue="">
-                  <option value="" disabled>
-                    Choose a medicine
+              <Select label="Medicine to hold" name="hold_medication_id" required defaultValue="">
+                <option value="" disabled>
+                  Choose a medicine
+                </option>
+                {medications.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
                   </option>
-                  {medications.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                ))}
+              </Select>
             ) : null}
-          </Stack>
-        </fieldset>
-      ) : null}
+          </Fieldset>
+        ) : null}
 
-      <Field label="Note for the record (optional)" name="note" maxLength={1000} />
-      {state.status === 'error' ? <Notice tone="error">{state.message}</Notice> : null}
-      <Button type="submit" disabled={pending} block>
-        {pending ? 'Recording…' : 'Record my decision'}
-      </Button>
-      <p className={styles.small}>blink-a-pill never changes a prescription. Your answer is shown to the patient in your name and kept in the audit trail.</p>
+        <Field label="Note for the record" name="note" maxLength={1000} hint="Optional. Not sent to the patient." />
+        {state.status === 'error' ? <Callout tone="danger" title={state.message} /> : null}
+        <Button type="submit" variant="primary" size="large" pending={pending} block>
+          Record decision
+        </Button>
+      </Stack>
     </form>
   );
 }

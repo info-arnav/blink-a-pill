@@ -1,1 +1,1 @@
-export { PrescriberPage as default } from '@/views/prescriber';
+export { PrescriberPage as default, metadata } from '@/views/prescriber';
