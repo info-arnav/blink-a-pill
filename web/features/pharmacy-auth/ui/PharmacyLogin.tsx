@@ -11,9 +11,14 @@ import { requestPharmacyCode, verifyPharmacyCode } from '../api/actions';
 export function PharmacyLogin({ next }: { next?: string }) {
   const [sent, sendAction, sending] = useActionState(requestPharmacyCode, IDLE);
   const [verified, verifyAction, verifying] = useActionState(verifyPharmacyCode, IDLE);
-  const [phone, setPhone] = useState('');
+  const [form, setForm] = useState({ phone: '', code: '', name: '', licence_number: '', address: '' });
   const register = Boolean(verified.data?.register);
   const verifyError = verified.status === 'error' ? verified.message : undefined;
+  const bind = (key: keyof typeof form) => ({
+    name: key,
+    value: form[key],
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [key]: e.target.value })),
+  });
 
   if (sent.status !== 'ok') {
     return (
@@ -21,14 +26,12 @@ export function PharmacyLogin({ next }: { next?: string }) {
         <Stack gap={4}>
           <Field
             label="Shop mobile number"
-            name="phone"
             inputMode="tel"
             autoComplete="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
             required
             error={sent.status === 'error' ? sent.message : undefined}
             hint="We send a six digit code on WhatsApp."
+            {...bind('phone')}
           />
           <Button type="submit" variant="primary" size="large" pending={sending} block>
             Send code
@@ -41,11 +44,10 @@ export function PharmacyLogin({ next }: { next?: string }) {
   return (
     <form action={verifyAction}>
       <Stack gap={4}>
-        <input type="hidden" name="phone" value={phone} />
+        <input type="hidden" name="phone" value={form.phone} />
         {next ? <input type="hidden" name="next" value={next} /> : null}
         <Field
           label="Six digit code"
-          name="code"
           inputMode="numeric"
           autoComplete="one-time-code"
           pattern="\d{6}"
@@ -53,17 +55,18 @@ export function PharmacyLogin({ next }: { next?: string }) {
           required
           mono
           error={register ? undefined : verifyError}
+          {...bind('code')}
         />
         {register ? (
-          <Fieldset legend="Register your shop">
-            <Field label="Shop name" name="name" required maxLength={120} autoComplete="organization" />
-            <Field label="Drug licence number" name="licence_number" required minLength={4} maxLength={60} mono />
-            <Field label="Address" name="address" maxLength={200} hint="Optional." autoComplete="street-address" />
+          <Fieldset legend="New shop" description="Asked once.">
+            <Field label="Shop name" required maxLength={120} autoComplete="organization" {...bind('name')} />
+            <Field label="Drug licence number" required minLength={4} maxLength={60} mono {...bind('licence_number')} />
+            <Field label="Address (optional)" maxLength={200} autoComplete="street-address" {...bind('address')} />
           </Fieldset>
         ) : null}
         {register && verifyError ? <Callout tone="danger" title={verifyError} /> : null}
         <Button type="submit" variant="primary" size="large" pending={verifying} block>
-          {register ? 'Register and continue' : 'Continue'}
+          {register ? 'Register shop' : 'Continue'}
         </Button>
       </Stack>
     </form>
