@@ -24,7 +24,10 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "tech.unlocalhost.blinkapill"
+      "package": "tech.unlocalhost.blinkapill",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "single",
@@ -58,6 +61,23 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "8aa2d29e-01ed-4e14-ac87-851e951a8751"
+      }
+    },
+    "owner": "arnav71441",
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/8aa2d29e-01ed-4e14-ac87-851e951a8751"
     }
   }
 }
