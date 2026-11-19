@@ -93,7 +93,7 @@ const evaluateFor = async (patientId, extraMeds = []) => {
 const actorOf = (actor) =>
   actor?.id
     ? { actor_type: actor.role === 'caregiver' ? 'caregiver' : 'patient', actor_name: actor.name ?? 'Patient' }
-    : { actor_type: 'system', actor_name: 'blink-a-pill rules' };
+    : { actor_type: 'system', actor_name: 'link-a-pill rules' };
 
 const recompute = async (patientId, { actor, reason } = {}) => {
   const found = await evaluateFor(patientId);
@@ -104,14 +104,14 @@ const recompute = async (patientId, { actor, reason } = {}) => {
     const prior = existing.get(f.fingerprint);
     if (!prior) {
       const created = await repo.insert(patientId, f, RULES_VERSION);
-      await repo.addEvent(created.id, { actor_type: 'system', actor_name: 'blink-a-pill rules', action: 'raised', note: `Rules version ${RULES_VERSION}` });
+      await repo.addEvent(created.id, { actor_type: 'system', actor_name: 'link-a-pill rules', action: 'raised', note: `Rules version ${RULES_VERSION}` });
       if (f.severity < 3) await repo.notify(patientId, 'flag', f.title, 'Tap to see why, and ask your doctor.', created.id);
       raised.push({ ...f, id: created.id });
       continue;
     }
     if (prior.status === 'no_longer_applies') {
       await repo.refresh(prior.id, f, 'open');
-      await repo.addEvent(prior.id, { actor_type: 'system', actor_name: 'blink-a-pill rules', action: 'raised again' });
+      await repo.addEvent(prior.id, { actor_type: 'system', actor_name: 'link-a-pill rules', action: 'raised again' });
       raised.push({ ...f, id: prior.id });
     } else if (LIVE.includes(prior.status)) {
       await repo.refresh(prior.id, f, null);

@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { SITE_NAME } from '@/shared/config/site';
 
-export const alt = 'blink-a-pill: one medicine list, checked and confirmed by a named professional';
+export const alt = 'link-a-pill: one medicine list, checked and confirmed by a named professional';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 

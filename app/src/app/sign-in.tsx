@@ -67,7 +67,7 @@ export default function SignIn() {
         <View style={{ alignItems: 'center', gap: 8 }}>
           <Icon name="pills.circle.fill" size={64} color={c.tint} fallback="💊" />
           <Txt style="title1" align="center">
-            blink-a-pill
+            link-a-pill
           </Txt>
           <Txt style="callout" color={c.secondaryLabel} align="center">
             All your medicines. One list.

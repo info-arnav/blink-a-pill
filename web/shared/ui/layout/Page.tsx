@@ -8,9 +8,9 @@ export function Page({ context, actions, width = 'reading', children }: { contex
     <div className={styles.shell}>
       <header className={styles.header}>
         <div className={styles.headerInner} data-width={width}>
-          <Link href="/" className={styles.brand} aria-label="blink-a-pill home">
+          <Link href="/" className={styles.brand} aria-label="link-a-pill home">
             <Mark />
-            <span>blink-a-pill</span>
+            <span>link-a-pill</span>
           </Link>
           {context ? <span className={styles.context}>{context}</span> : null}
           {actions ? <div className={styles.actions}>{actions}</div> : null}

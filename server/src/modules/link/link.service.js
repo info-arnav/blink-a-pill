@@ -25,7 +25,7 @@ const issue = async (flagId, purpose, phone, extra = {}) => {
 
 const sendToPrescriber = async (flagRow, prescriber, clinicId, actor) => {
   const url = await issue(flagRow.id, 'prescriber', prescriber.phone, { prescriber_id: prescriber.id, clinic_id: clinicId });
-  await notify.sendOrThrow(prescriber.phone, 'prescriber_request', `blink-a-pill: 1 patient needs your decision on their medicines. It takes under a minute: ${url}`);
+  await notify.sendOrThrow(prescriber.phone, 'prescriber_request', `link-a-pill: 1 patient needs your decision on their medicines. It takes under a minute: ${url}`);
   await flagRepo.setStatus(flagRow.id, 'with_prescriber');
   await flagRepo.addEvent(flagRow.id, { ...actor, action: 'sent to prescriber', note: `Sent to ${prescriber.name} on WhatsApp` });
 };
@@ -47,7 +47,7 @@ const ask = async (patientId, flagId, actor, input) => {
     await notify.sendOrThrow(
       clinic.reception_phone,
       'reception_request',
-      `blink-a-pill: ${initials(person.full_name)}, a patient of ${prescriber.name}, asked for a quick check of their medicine list against your records. Please open: ${url}`,
+      `link-a-pill: ${initials(person.full_name)}, a patient of ${prescriber.name}, asked for a quick check of their medicine list against your records. Please open: ${url}`,
     );
     await flagRepo.setStatus(flagRow.id, 'asked');
     await flagRepo.addEvent(flagRow.id, { ...who, action: 'sent to reception', note: `Sent to ${clinic.name} reception on WhatsApp` });
@@ -154,10 +154,10 @@ const prescriberDecide = async (token, input, meta) => {
   await flagRepo.notify(link.patient_id, 'decision', `${doctorName} answered`, text, flagRow.id);
   const person = await patient.get(link.patient_id);
   const answerUrl = await issue(flagRow.id, 'patient_answer', person.phone);
-  const sent = await notify.send(person.phone, 'patient_answer', `blink-a-pill: ${doctorName} has answered your question about your medicines. Open: ${answerUrl}`);
+  const sent = await notify.send(person.phone, 'patient_answer', `link-a-pill: ${doctorName} has answered your question about your medicines. Open: ${answerUrl}`);
   await flagRepo.addEvent(flagRow.id, {
     actor_type: 'system',
-    actor_name: 'blink-a-pill',
+    actor_name: 'link-a-pill',
     action: sent.ok ? 'patient told on WhatsApp' : 'patient told in app',
   });
   return { status, patient_message: text };

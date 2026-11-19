@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import { getItem, removeItem, setItem } from './storage';
 
-export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://blink-a-pill.unlocalhost.tech';
+export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://link-a-pill.unlocalhost.tech';
 
 const TOKEN_KEY = 'bap.session';
 

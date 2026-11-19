@@ -33,7 +33,7 @@ export const homeJsonLd = [
     '@type': 'MedicalWebPage',
     '@id': `${SITE_URL}/#page`,
     url: SITE_URL,
-    name: 'How blink-a-pill keeps a medicine list safe',
+    name: 'How link-a-pill keeps a medicine list safe',
     audience: [
       { '@type': 'MedicalAudience', audienceType: 'Patient' },
       { '@type': 'MedicalAudience', audienceType: 'Clinician' },

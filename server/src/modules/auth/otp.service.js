@@ -24,7 +24,7 @@ const requestOtp = async (phone, audience) => {
   await notify.sendOrThrow(
     phone,
     'otp',
-    `${code} is your blink-a-pill code. It expires in 5 minutes. Do not share it with anyone.`,
+    `${code} is your link-a-pill code. It expires in 5 minutes. Do not share it with anyone.`,
   );
 };
 

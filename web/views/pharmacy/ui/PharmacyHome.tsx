@@ -11,7 +11,7 @@ import styles from './pharmacy.module.css';
 
 export const metadata: Metadata = {
   title: 'For pharmacies',
-  description: 'Scan a patient’s blink-a-pill card at the counter to see open medicine concerns and the doctor’s answer. Register once with your drug licence number.',
+  description: 'Scan a patient’s link-a-pill card at the counter to see open medicine concerns and the doctor’s answer. Register once with your drug licence number.',
   alternates: { canonical: '/pharmacy' },
 };
 

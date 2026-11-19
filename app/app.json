@@ -1,19 +1,19 @@
 {
   "expo": {
-    "name": "blink-a-pill",
+    "name": "link-a-pill",
     "slug": "blink-a-pill",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "blinkapill",
+    "scheme": "linkapill",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "tech.unlocalhost.blinkapill",
+      "bundleIdentifier": "tech.unlocalhost.linkapill",
       "supportsTablet": false,
       "infoPlist": {
-        "NSCameraUsageDescription": "blink-a-pill uses the camera to photograph your prescriptions and medicine strips.",
-        "NSPhotoLibraryUsageDescription": "blink-a-pill lets you choose a photo of a prescription from your library."
+        "NSCameraUsageDescription": "link-a-pill uses the camera to photograph your prescriptions and medicine strips.",
+        "NSPhotoLibraryUsageDescription": "link-a-pill lets you choose a photo of a prescription from your library."
       }
     },
     "android": {
@@ -24,7 +24,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "tech.unlocalhost.blinkapill",
+      "package": "tech.unlocalhost.linkapill",
       "permissions": [
         "android.permission.RECORD_AUDIO"
       ]
@@ -47,8 +47,8 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "blink-a-pill uses the camera to photograph your prescriptions and medicine strips.",
-          "photosPermission": "blink-a-pill lets you choose a photo of a prescription from your library."
+          "cameraPermission": "link-a-pill uses the camera to photograph your prescriptions and medicine strips.",
+          "photosPermission": "link-a-pill lets you choose a photo of a prescription from your library."
         }
       ],
       [

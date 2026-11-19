@@ -6,7 +6,7 @@ export default function NotFound() {
     <Page>
       <PageTitle overline="404" title="This page does not exist" description="The link may have expired or been mistyped. Nothing about anyone’s medicines has changed." />
       <div>
-        <LinkButton href="/">Go to blink-a-pill</LinkButton>
+        <LinkButton href="/">Go to link-a-pill</LinkButton>
       </div>
     </Page>
   );
