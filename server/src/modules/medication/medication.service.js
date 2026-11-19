@@ -60,9 +60,9 @@ const resolvePrescriber = async (input) => {
   return { prescriberId, clinicId };
 };
 
-const add = async (patientId, user, input) => {
+const add = async (patientId, user, input, options = {}) => {
   const { name, ingredients, productId } = await resolveIngredients(input);
-  const { prescriberId, clinicId } = await resolvePrescriber(input);
+  const { prescriberId, clinicId } = options.prescriberId !== undefined ? options : await resolvePrescriber(input);
   const start = input.start_date ?? todayIst();
   const times = input.frequency === 'SOS' ? [] : input.times?.length ? input.times : FREQUENCIES[input.frequency]?.times ?? [];
   if (input.frequency !== 'SOS' && !times.length) throw new AppError('TIMES_REQUIRED', 'Choose at least one time of day', 422);
@@ -87,7 +87,9 @@ const add = async (patientId, user, input) => {
     source: input.source,
     added_by: user.id,
     confirmed_by: user.role === 'caregiver' ? 'caregiver' : 'patient',
+    prescription_id: options.prescriptionId ?? null,
   });
+  if (options.skipRecompute) return { medication: shape(await repo.findById(patientId, created.id)), new_flags: [] };
   const raised = await flags.recompute(patientId, { actor: user });
   return {
     medication: shape(await repo.findById(patientId, created.id)),
@@ -148,4 +150,4 @@ const recordCourse = async (patientId, id, outcome, actor) => {
 
 const coursesDue = async (patientId) => (await repo.coursesDue(patientId, todayIst())).map(shape);
 
-module.exports = { list, add, updateSchedule, setPrescriber, markNotTaking, recordCourse, coursesDue, shape, REASONS };
+module.exports = { resolvePrescriber, list, add, updateSchedule, setPrescriber, markNotTaking, recordCourse, coursesDue, shape, REASONS };

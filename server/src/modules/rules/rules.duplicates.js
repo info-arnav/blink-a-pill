@@ -15,7 +15,7 @@ const duplicateIngredients = (meds) => {
     const doses = entry.meds.map((m) => dailyMg(m, key));
     const known = doses.every((d) => d != null);
     const total = known ? doses.reduce((a, b) => a + b, 0) : null;
-    const max = MAX_DAILY_MG[key];
+    const max = MAX_DAILY_MG[key]?.mg;
     const over = total != null && max != null && total > max;
     const reasoning = [
       `${entry.display} is an ingredient of ${joinNames(names(entry.meds).map((n) => `"${n}"`))}.`,
@@ -35,7 +35,7 @@ const duplicateIngredients = (meds) => {
         patient: `${joinNames(names(entry.meds))} both contain ${entry.display}. Taking both could mean a double dose${over ? ', and together they go above the usual daily limit' : ''}. This may be intended, or it may be a mix-up between prescriptions. Please ask your doctor.`,
         clinician: `Duplicate active ingredient (${entry.display}) across ${entry.meds.length} entries${total != null ? `, combined ${total} mg/day` : ''}${over ? `, above usual maximum ${max} mg/day` : ''}. Please confirm whether this combination is intended.`,
         reasoning,
-        sources: ['cdsco_fdc', 'general'],
+        sources: ['cdsco_fdc', ...(MAX_DAILY_MG[key] ? [MAX_DAILY_MG[key].source] : [])],
       }),
     );
   }
@@ -66,7 +66,7 @@ const duplicateClasses = (meds) => {
           ...members.map((m) => `${m.display_name}: ${m.ingredients.map((p) => p.display).join(' + ')}.`),
           prescriberNote(members),
         ],
-        sources: cls === 'nsaid' ? ['nsaid_label'] : ['general'],
+        sources: cls === 'nsaid' ? ['nsaid_label'] : cls === 'anticoagulant' ? ['warfarin_label'] : ['telmisartan_label'],
       }),
     );
   }
@@ -87,7 +87,7 @@ const overDailyMax = (meds) => {
   }
   const out = [];
   for (const [key, entry] of totals) {
-    const max = MAX_DAILY_MG[key];
+    const max = MAX_DAILY_MG[key]?.mg;
     if (!max || entry.mg <= max || entry.meds.length > 1) continue;
     out.push(
       flag({
@@ -99,7 +99,7 @@ const overDailyMax = (meds) => {
         patient: `As entered, ${entry.meds[0].display_name} adds up to ${entry.mg} mg of ${entry.display} a day. The usual adult limit is ${max} mg. Please check the dose with your doctor or pharmacist.`,
         clinician: `${entry.display} ${entry.mg} mg/day as entered, above usual adult maximum ${max} mg/day. Check the dose and frequency.`,
         reasoning: [`${entry.meds[0].display_name}: ${entry.mg} mg a day as entered.`, `Usual adult maximum: ${max} mg a day.`],
-        sources: key === 'paracetamol' ? ['paracetamol_liver', 'general'] : ['general'],
+        sources: [MAX_DAILY_MG[key].source],
       }),
     );
   }

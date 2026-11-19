@@ -59,10 +59,10 @@ const kidney = (meds, egfr) => {
   }
 
   const nitro = withIngredient(meds, 'nitrofurantoin');
-  if (nitro.length && egfr < 45) {
+  if (nitro.length && egfr < 60) {
     out.push(flag({ rule: 'kidney_nitrofurantoin', meds: nitro, severity: 2, title: 'Urine infection antibiotic and kidney function',
-      patient: 'This antibiotic works less well and can cause side effects when kidney function is low. Please ask your doctor.',
-      clinician: `Nitrofurantoin with eGFR ${egfr} (< 45): reduced efficacy and toxicity risk.`, reasoning: [labelGfr], sources: ['general'] }));
+      patient: 'This antibiotic can cause side effects when kidney function is low. Please ask your doctor.',
+      clinician: `Nitrofurantoin with eGFR ${egfr}: label contraindicates use with creatinine clearance under 60 mL/min.`, reasoning: [labelGfr], sources: ['nitrofurantoin_label'] }));
   }
 
   const coamox = meds.filter((m) => m.ingredients.some((p) => p.key === 'amoxycillin') && m.ingredients.some((p) => p.key === 'clavulanic acid'));
@@ -100,19 +100,13 @@ const liver = (meds, childPugh) => {
   if (statins.length && childPugh === 'C') {
     out.push(flag({ rule: 'liver_statin', meds: statins, severity: 1, title: 'Cholesterol medicine and severe liver disease',
       patient: 'Cholesterol medicines are usually avoided with severe liver disease. Please ask your doctor.',
-      clinician: `Statin with Child-Pugh C: contraindicated in decompensated liver disease.`, reasoning: [label], sources: ['general'] }));
+      clinician: `Statin with Child-Pugh C: atorvastatin label contraindicates use in decompensated cirrhosis.`, reasoning: [label], sources: ['atorvastatin_label'] }));
   }
   const coamox = meds.filter((m) => m.ingredients.some((p) => p.key === 'clavulanic acid'));
   if (coamox.length) {
     out.push(flag({ rule: 'liver_coamoxiclav', meds: coamox, severity: 2, title: 'Antibiotic and liver disease',
       patient: 'This antibiotic has rarely caused liver problems. With your liver condition, your doctor may want to keep an eye on it.',
       clinician: `Amoxicillin-clavulanate with Child-Pugh ${childPugh}: hepatic dysfunction warning, monitor.`, reasoning: [label], sources: ['augmentin_label'] }));
-  }
-  const nsaids = withClass(meds, 'nsaid');
-  if (nsaids.length && childPugh === 'C') {
-    out.push(flag({ rule: 'liver_nsaid', meds: nsaids, severity: 1, title: 'Painkiller and severe liver disease',
-      patient: 'This kind of painkiller can cause bleeding and kidney problems with severe liver disease. Please ask your doctor.',
-      clinician: 'NSAID with Child-Pugh C: avoid (bleeding, renal failure, fluid retention).', reasoning: [label], sources: ['nsaid_label'] }));
   }
   return out;
 };

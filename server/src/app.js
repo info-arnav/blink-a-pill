@@ -29,6 +29,7 @@ app.use('/v1/auth', require('#modules/auth/auth.routes'));
 app.use('/v1/drugs', require('#modules/drug/drug.routes'));
 app.use('/v1/patients', require('#modules/capture/capture.routes'));
 app.use('/v1/patients/:patientId/medications', scoped, require('#modules/medication/medication.routes'));
+app.use('/v1/patients/:patientId/prescriptions', scoped, require('#modules/prescription/prescription.routes'));
 app.use('/v1/patients/:patientId/schedule', scoped, require('#modules/schedule/schedule.routes'));
 app.use('/v1/patients/:patientId/labs', scoped, require('#modules/lab/lab.routes'));
 app.use('/v1/patients/:patientId/flags', scoped, require('#modules/flag/flag.routes'));

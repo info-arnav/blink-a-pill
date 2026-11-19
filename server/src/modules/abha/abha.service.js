@@ -4,11 +4,12 @@ const { randomToken } = require('#lib/tokens');
 const { todayIst } = require('#lib/dates');
 const patientRepo = require('#modules/patient/patient.repository');
 const patient = require('#modules/patient/patient.service');
-const medication = require('#modules/medication/medication.service');
+const prescriptions = require('#modules/prescription/prescription.service');
 const drug = require('#modules/drug/drug.service');
 const labRepo = require('#modules/lab/lab.repository');
 const { ckdEpi2021 } = require('#modules/lab/lab.service');
 const flags = require('#modules/flag/flag.service');
+const conditionService = require('#modules/condition/condition.service');
 const { SANDBOX_SUFFIX, bundleFor } = require('./abha.sandbox');
 
 const LOINC = { '2160-0': 'creatinine', '4548-4': 'hba1c', '62238-1': 'egfr', '2823-3': 'potassium' };
@@ -53,7 +54,11 @@ const importBundle = async (patientId, actor, bundle) => {
 
   for (const c of resources.filter((r) => r.resourceType === 'Condition')) {
     if (known.conditions.has(c.code.text.toLowerCase())) continue;
-    await patientRepo.addCondition(patientId, c.code.text, 'abha', c.code.coding?.[0]?.code ?? null);
+    const resolved = conditionService.resolve(c.code.text, c.code.text);
+    await db.transaction((tx) =>
+      conditionService.insert(tx, { patient_id: patientId, ...resolved, code: c.code.coding?.[0]?.code ?? resolved.code, written_as: c.code.text, source: 'abha' }),
+    );
+    known.conditions.add(c.code.text.toLowerCase());
     summary.conditions += 1;
   }
 
@@ -76,16 +81,23 @@ const importBundle = async (patientId, actor, bundle) => {
     const speciality = requester?.match(/\(([^)]+)\)/)?.[1] ?? null;
     const perDay = m.dosageInstruction?.[0]?.timing?.repeat?.frequency ?? 1;
     const text = m.dosageInstruction?.[0]?.text ?? '';
-    await medication.add(patientId, actor, {
-      product_id: match?.id,
-      name: match ? undefined : m.medicationCodeableConcept.text,
-      frequency: PER_DAY[perDay] ?? 'OD',
-      meal: /after food/i.test(text) ? 'after' : /before/i.test(text) ? 'before' : 'any',
-      start_date: m.authoredOn,
-      prescribed_on: m.authoredOn,
-      prescriber: requester ? { name: requester.replace(/\s*\(.*\)$/, ''), speciality } : undefined,
-      source: 'abha',
-    });
+    await prescriptions.create(
+      patientId,
+      actor,
+      {
+        prescriber: requester ? { name: requester.replace(/\s*\(.*\)$/, ''), speciality: speciality ?? undefined } : undefined,
+        prescribed_on: m.authoredOn,
+        medications: [
+          {
+            product_id: match?.id,
+            name: match ? undefined : m.medicationCodeableConcept.text,
+            frequency: PER_DAY[perDay] ?? 'OD',
+            meal: /after food/i.test(text) ? 'after' : /before/i.test(text) ? 'before' : 'any',
+          },
+        ],
+      },
+      'abha',
+    );
     summary.medications += 1;
   }
 

@@ -5,9 +5,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { api, errorMessage, sendPhoto } from '@/lib/api';
 import { usePatient } from '@/lib/session';
-import type { Capture, Flag, Medication } from '@/lib/types';
+import type { Capture, Diagnosis, Flag } from '@/lib/types';
 import { MedicineEditor, draftReady, draftToBody, type Draft } from '@/features/medicine-editor';
-import { Button, Cell, Empty, ErrorText, Group, Input, Loading, Screen, Txt } from '@/ui/kit';
+import { Button, Cell, Empty, ErrorText, Group, Icon, Input, Loading, Screen, Txt } from '@/ui/kit';
 import { useColors } from '@/ui/theme';
 
 const FREQ = new Set(['OD', 'BD', 'TID', 'QID', 'HS', 'SOS']);
@@ -33,6 +33,7 @@ export default function AddPhoto() {
   const [reading, setReading] = useState(false);
   const [capture, setCapture] = useState<Capture | null>(null);
   const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [diagnoses, setDiagnoses] = useState<(Diagnosis & { keep: boolean })[]>([]);
   const [doctor, setDoctor] = useState({ name: '', phone: '' });
   const [clinic, setClinic] = useState({ name: '', phone: '' });
   const [saving, setSaving] = useState(false);
@@ -70,6 +71,7 @@ export default function AddPhoto() {
       const read = await sendPhoto<Capture>(`/v1/patients/${patient.id}/capture`, { data: image.base64, mime_type: 'image/jpeg' });
       setCapture(read);
       setDrafts(read.items.map(toDraft));
+      setDiagnoses(read.diagnoses.map((d) => ({ ...d, keep: true })));
       setDoctor({ name: read.doctor?.name ?? '', phone: read.doctor?.phone ?? '' });
       setClinic({ name: read.clinic?.name ?? '', phone: read.clinic?.phone ?? '' });
     } catch (err) {
@@ -82,22 +84,19 @@ export default function AddPhoto() {
   const save = async () => {
     setSaving(true);
     setError(null);
-    const raised: Flag[] = [];
     try {
-      for (const draft of drafts.filter((d) => d.include)) {
-        const result = await api<{ medication: Medication; new_flags: Flag[] }>(`/v1/patients/${patient.id}/medications`, {
-          method: 'POST',
-          body: {
-            ...draftToBody(draft),
-            source: 'photo',
-            prescribed_on: capture?.prescribed_on ?? undefined,
-            prescriber: doctor.name.trim() ? { name: doctor.name.trim(), phone: doctor.phone.trim() || undefined } : undefined,
-            clinic: clinic.name.trim() ? { name: clinic.name.trim(), reception_phone: clinic.phone.trim() || undefined } : undefined,
-          },
-        });
-        raised.push(...result.new_flags);
-      }
-      if (raised.length) router.replace(`/concern/${raised[0].id}?fresh=1`);
+      const result = await api<{ new_flags: Flag[] }>(`/v1/patients/${patient.id}/prescriptions`, {
+        method: 'POST',
+        body: {
+          prescriber: doctor.name.trim() ? { name: doctor.name.trim(), phone: doctor.phone.trim() || undefined } : undefined,
+          clinic: clinic.name.trim() ? { name: clinic.name.trim(), reception_phone: clinic.phone.trim() || undefined } : undefined,
+          prescribed_on: capture?.prescribed_on ?? undefined,
+          reason: capture?.reason ?? undefined,
+          diagnoses: diagnoses.filter((d) => d.keep).map((d) => ({ name: d.name, written_as: d.written_as, certainty: d.certainty })),
+          medications: drafts.filter((d) => d.include).map(draftToBody),
+        },
+      });
+      if (result.new_flags.length) router.replace(`/concern/${result.new_flags[0].id}?fresh=1`);
       else router.back();
     } catch (err) {
       setError(errorMessage(err));
@@ -136,7 +135,22 @@ export default function AddPhoto() {
   return (
     <Screen>
       {photo ? <Image source={{ uri: photo }} style={{ width: '100%', height: 140, borderRadius: 12 }} resizeMode="cover" accessibilityLabel="Your photo" /> : null}
-      {!capture.items.length ? <Empty symbol="questionmark.text.page" title="No medicines found" detail="Try again flat and in good light." /> : null}
+      {!capture.items.length && !capture.diagnoses.length ? <Empty symbol="questionmark.text.page" title="Nothing found" detail="Try again flat and in good light." /> : null}
+
+      {diagnoses.length || capture.reason ? (
+        <Group header="Diagnosis" footer={doctor.name ? `As written by ${doctor.name}. Untick anything we read wrong.` : 'Untick anything we read wrong.'}>
+          {capture.reason ? <Cell title={capture.reason} subtitle="Reason for visit" /> : null}
+          {diagnoses.map((d, index) => (
+            <Cell
+              key={`${d.written_as}${index}`}
+              title={d.name}
+              subtitle={[d.written_as !== d.name ? `“${d.written_as}”` : null, d.certainty === 'provisional' ? 'Provisional' : d.certainty === 'history' ? 'Known condition' : null].filter(Boolean).join(' · ') || undefined}
+              onPress={() => setDiagnoses((all) => all.map((x, i) => (i === index ? { ...x, keep: !x.keep } : x)))}
+              trailing={<Icon name={d.keep ? 'checkmark.circle.fill' : 'circle'} size={22} color={d.keep ? c.tint : c.tertiaryLabel} fallback={d.keep ? '●' : '○'} />}
+            />
+          ))}
+        </Group>
+      ) : null}
 
       <Group header="Prescribed By">
         <Input label="Doctor" value={doctor.name} onChangeText={(name) => setDoctor((d) => ({ ...d, name }))} />
@@ -164,7 +178,12 @@ export default function AddPhoto() {
       ))}
 
       {error ? <ErrorText>{error}</ErrorText> : null}
-      <Button title={`Add ${included.length} ${included.length === 1 ? 'Medicine' : 'Medicines'}`} onPress={save} busy={saving} disabled={!included.length || !included.every(draftReady)} />
+      <Button
+        title={included.length ? `Add ${included.length} ${included.length === 1 ? 'Medicine' : 'Medicines'}` : 'Save Diagnosis'}
+        onPress={save}
+        busy={saving}
+        disabled={(!included.length && !diagnoses.some((d) => d.keep)) || !included.every(draftReady)}
+      />
       <Button title="Retake" kind="plain" size="medium" onPress={() => { setCapture(null); setDrafts([]); setPhoto(null); }} />
     </Screen>
   );

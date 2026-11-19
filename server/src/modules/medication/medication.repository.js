@@ -41,8 +41,8 @@ const createClinic = (clinic) =>
 const insert = (m) =>
   db.one(
     `INSERT INTO medications (patient_id, product_id, display_name, ingredients, dose_amount, dose_unit, frequency, times, meal,
-       start_date, duration_days, end_date, is_antibiotic, prescriber_id, clinic_id, prescribed_on, source, added_by, confirmed_by)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+       start_date, duration_days, end_date, is_antibiotic, prescriber_id, clinic_id, prescribed_on, source, added_by, confirmed_by, prescription_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
      RETURNING id`,
     [
       m.patient_id,
@@ -64,6 +64,7 @@ const insert = (m) =>
       m.source,
       m.added_by,
       m.confirmed_by,
+      m.prescription_id ?? null,
     ],
   );
 

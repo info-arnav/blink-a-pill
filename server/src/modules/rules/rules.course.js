@@ -28,7 +28,7 @@ const unknownMedicines = (meds) =>
         patient: `We could not find what ${m.display_name} contains, so we could not check it against your other medicines. Show it to your doctor or pharmacist.`,
         clinician: `Entry "${m.display_name}" did not match a known product; not screened. No result here is not an all-clear.`,
         reasoning: ['The name did not match any product in the medicine list.'],
-        sources: ['general'],
+        sources: [],
       }),
     );
 

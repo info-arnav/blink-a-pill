@@ -3,6 +3,7 @@ const logger = require('#lib/logger');
 const { AppError } = require('#lib/app-error');
 const { FREQUENCIES, timesFromPattern } = require('#constants/schedule');
 const drug = require('#modules/drug/drug.service');
+const conditions = require('#modules/condition/condition.service');
 const { INSTRUCTION, SCHEMA } = require('./capture.prompt');
 
 const strengthNumbers = (text) => (text ?? '').match(/\d+(\.\d+)?/g) ?? [];
@@ -44,12 +45,17 @@ const readPhoto = async (file) => {
     throw new AppError('READ_FAILED', 'We could not read this photo. Try again in good light, or type the medicine instead.', 502);
   }
 
-  if (read.kind === 'other' || !read.items?.length) {
-    return { kind: read.kind, doctor: null, clinic: null, prescribed_on: null, items: [] };
+  const diagnoses = (read.diagnoses ?? []).slice(0, 10).map((d) => {
+    const resolved = conditions.resolve(d.written_as, d.name);
+    return { written_as: d.written_as, name: resolved.name, code: resolved.code, certainty: d.certainty };
+  });
+
+  if (read.kind === 'other' || (!read.items?.length && !diagnoses.length)) {
+    return { kind: read.kind, doctor: null, clinic: null, prescribed_on: null, reason: null, diagnoses: [], items: [] };
   }
 
   const items = await Promise.all(
-    read.items.slice(0, 12).map(async (item) => {
+    (read.items ?? []).slice(0, 12).map(async (item) => {
       const query = `${item.written_name} ${strengthNumbers(item.strength)[0] ?? ''}`.trim();
       let candidates = await drug.searchProducts(query, 6);
       if (!candidates.length) candidates = await drug.searchProducts(item.written_name, 6);
@@ -75,6 +81,8 @@ const readPhoto = async (file) => {
     doctor: read.doctor_name ? { name: read.doctor_name, phone: digits(read.doctor_phone) ?? digits(read.clinic_phone) } : null,
     clinic: read.clinic_name ? { name: read.clinic_name, phone: digits(read.clinic_phone) } : null,
     prescribed_on: /^\d{4}-\d{2}-\d{2}$/.test(read.prescribed_on ?? '') ? read.prescribed_on : null,
+    reason: read.reason_for_visit ?? null,
+    diagnoses,
     items,
   };
 };

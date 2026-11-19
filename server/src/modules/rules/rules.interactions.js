@@ -12,7 +12,7 @@ const PAIRS = [
     title: 'Two blood pressure medicines that act on the same system',
     patient: 'Taking an ARB and an ACE inhibitor together can raise potassium and strain the kidneys. It is rarely intended.',
     clinician: 'Dual RAAS blockade (ARB with ACE inhibitor): risk of hyperkalaemia, hypotension and AKI.',
-    sources: ['kdigo_2024', 'general'],
+    sources: ['telmisartan_label', 'kdigo_2024'],
   },
   {
     rule: 'raas_potassium',
@@ -22,7 +22,7 @@ const PAIRS = [
     title: 'Potassium could build up',
     patient: 'These medicines together can raise the potassium level in your blood. Doctors often check a blood test when they are used together.',
     clinician: 'RAAS blocker with potassium-sparing agent or potassium supplement: hyperkalaemia risk, check potassium and renal function.',
-    sources: ['kdigo_2024', 'general'],
+    sources: ['telmisartan_label'],
   },
   {
     rule: 'nsaid_anticoagulant',
@@ -32,7 +32,7 @@ const PAIRS = [
     title: 'Painkiller with a blood thinner',
     patient: 'This painkiller and your blood thinner together raise the chance of bleeding, including stomach bleeding.',
     clinician: 'NSAID with anticoagulant: increased bleeding risk, including GI bleeding.',
-    sources: ['nsaid_label'],
+    sources: ['warfarin_label', 'nsaid_label'],
   },
   {
     rule: 'antiplatelet_anticoagulant',
@@ -42,7 +42,7 @@ const PAIRS = [
     title: 'Two medicines that thin the blood',
     patient: 'These two medicines both reduce clotting. Sometimes this is planned, for example after a heart procedure, but it raises the chance of bleeding.',
     clinician: 'Antiplatelet with anticoagulant: confirm indication and planned duration.',
-    sources: ['general'],
+    sources: ['warfarin_label'],
   },
   {
     rule: 'clopidogrel_ppi',
@@ -82,7 +82,7 @@ const PAIRS = [
     title: 'Heart medicine with sildenafil-type medicine',
     patient: 'These two together can drop blood pressure dangerously.',
     clinician: 'Nitrate with PDE5 inhibitor: contraindicated, severe hypotension.',
-    sources: ['general'],
+    sources: ['sildenafil_label'],
   },
   {
     rule: 'ssri_tramadol',
@@ -92,7 +92,7 @@ const PAIRS = [
     title: 'Two medicines that both raise serotonin',
     patient: 'Together these can rarely cause a reaction with confusion, shaking or high temperature.',
     clinician: 'SSRI with tramadol or tapentadol: serotonin syndrome and seizure risk.',
-    sources: ['general'],
+    sources: ['tramadol_label'],
   },
   {
     rule: 'beta_blocker_rate_ccb',
@@ -102,7 +102,7 @@ const PAIRS = [
     title: 'Two medicines that slow the heart',
     patient: 'Both of these slow the heartbeat. Together they can make it too slow.',
     clinician: 'Beta blocker with verapamil or diltiazem: bradycardia and AV block risk.',
-    sources: ['general'],
+    sources: ['verapamil_label'],
   },
 ];
 

@@ -4,6 +4,7 @@ const { randomCode } = require('#lib/tokens');
 const { ageFrom } = require('#lib/dates');
 const card = require('#modules/card/card.service');
 const repo = require('./patient.repository');
+const conditionService = require('#modules/condition/condition.service');
 
 const shape = (p) => ({
   id: p.id,
@@ -80,8 +81,11 @@ const removeCaregiver = async (patientId, actorRole, caregiverId) => {
   await repo.removeCaregiver(patientId, caregiverId);
 };
 
-const conditions = (patientId) => repo.conditions(patientId);
+const conditions = (patientId) => conditionService.summary(patientId);
 
-const addCondition = (patientId, name) => repo.addCondition(patientId, name, 'typed');
+const addCondition = async (patientId, name) => {
+  await conditionService.addTyped(patientId, name);
+  return conditionService.summary(patientId);
+};
 
 module.exports = { list, get, create, update, members, invite, acceptInvite, removeCaregiver, conditions, addCondition };

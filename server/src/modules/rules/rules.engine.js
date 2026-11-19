@@ -2,8 +2,9 @@ const { duplicateIngredients, duplicateClasses, overDailyMax } = require('./rule
 const { curatedPairs, tripleWhammy, datasetPairs } = require('./rules.interactions');
 const { kidney, liver } = require('./rules.organ');
 const { antibioticWithoutEnd, unknownMedicines } = require('./rules.course');
+const { conditionRules } = require('./rules.conditions');
 
-const evaluate = (meds, { egfr = null, childPugh = null, knownPairs = new Map() } = {}) => {
+const evaluate = (meds, { egfr = null, childPugh = null, knownPairs = new Map(), conditions = [] } = {}) => {
   const curated = [
     ...duplicateIngredients(meds),
     ...duplicateClasses(meds),
@@ -19,6 +20,7 @@ const evaluate = (meds, { egfr = null, childPugh = null, knownPairs = new Map() 
     ...datasetPairs(meds, knownPairs, flaggedPairs),
     ...kidney(meds, egfr),
     ...liver(meds, childPugh),
+    ...conditionRules(meds, conditions, { egfr }),
     ...antibioticWithoutEnd(meds),
     ...unknownMedicines(meds),
   ];

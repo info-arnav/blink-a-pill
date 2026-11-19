@@ -144,45 +144,14 @@ const baseName = (ingredient) => {
   return ingredient;
 };
 
-const DUPLICATE_CLASSES = Object.freeze([
-  'arb',
-  'acei',
-  'ccb',
-  'beta_blocker',
-  'sulfonylurea',
-  'dpp4',
-  'sglt2',
-  'statin',
-  'nsaid',
-  'anticoagulant',
-  'ppi',
-  'benzodiazepine',
-]);
+const DUPLICATE_CLASSES = Object.freeze(['arb', 'acei', 'nsaid', 'anticoagulant']);
 
 const MAX_DAILY_MG = Object.freeze({
-  paracetamol: 4000,
-  telmisartan: 80,
-  losartan: 100,
-  olmesartan: 40,
-  amlodipine: 10,
-  metformin: 2550,
-  glimepiride: 8,
-  gliclazide: 320,
-  sitagliptin: 100,
-  vildagliptin: 100,
-  teneligliptin: 40,
-  atorvastatin: 80,
-  rosuvastatin: 40,
-  diclofenac: 150,
-  aceclofenac: 200,
-  ibuprofen: 2400,
-  ramipril: 10,
-  hydrochlorothiazide: 50,
-  metoprolol: 400,
-  pantoprazole: 80,
-  tramadol: 400,
-  cetirizine: 10,
-  levocetirizine: 5,
+  paracetamol: { mg: 4000, source: 'acetaminophen_label' },
+  telmisartan: { mg: 80, source: 'telmisartan_label' },
+  metformin: { mg: 2550, source: 'metformin_label' },
+  sitagliptin: { mg: 100, source: 'januvia_label' },
+  amlodipine: { mg: 10, source: 'amlodipine_label' },
 });
 
 module.exports = { CLASSES, DUPLICATE_CLASSES, MAX_DAILY_MG, classesOf, baseName };

@@ -4,11 +4,9 @@ import { api, errorMessage } from '@/lib/api';
 import { usePatient } from '@/lib/session';
 import { useData } from '@/lib/use-data';
 import { formatDate } from '@/lib/format';
-import type { Flag, Lab, Medication } from '@/lib/types';
+import type { Condition, Flag, Lab, Visit } from '@/lib/types';
 import { Cell, ErrorText, Group, Input, Loading, Screen, Tile, Txt } from '@/ui/kit';
 import { useColors } from '@/ui/theme';
-
-type Condition = { id: string; name: string; source: string };
 
 const LAB_NAME: Record<string, string> = {
   egfr: 'eGFR',
@@ -27,13 +25,13 @@ export default function Record() {
 
   const { data, loading, refreshing, reload, refresh } = useData(async () => {
     const base = `/v1/patients/${patient.id}`;
-    const [labs, conditions, meds, flags] = await Promise.all([
+    const [labs, conditions, visits, flags] = await Promise.all([
       api<{ latest: Lab[] }>(`${base}/labs`),
       api<Condition[]>(`${base}/conditions`),
-      api<Medication[]>(`${base}/medications?all=1`),
+      api<Visit[]>(`${base}/prescriptions`),
       api<Flag[]>(`${base}/flags`),
     ]);
-    return { labs: labs.latest, conditions, meds, flags: flags.filter((f) => f.status !== 'no_longer_applies') };
+    return { labs: labs.latest, conditions, visits, flags: flags.filter((f) => f.status !== 'no_longer_applies') };
   }, [patient.id]);
 
   const addCondition = async () => {
@@ -49,12 +47,6 @@ export default function Record() {
   };
 
   if (!data) return <Screen>{loading ? <Loading /> : null}</Screen>;
-
-  const doctors = new Map<string, Medication[]>();
-  for (const m of data.meds) {
-    const key = m.prescriber?.name ?? 'Unknown doctor';
-    doctors.set(key, [...(doctors.get(key) ?? []), m]);
-  }
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>
@@ -72,17 +64,35 @@ export default function Record() {
 
       <Group header="Conditions">
         {data.conditions.map((cond) => (
-          <Cell key={cond.id} title={cond.name} value={cond.source === 'abha' ? 'ABHA' : undefined} />
+          <Cell
+            key={cond.id}
+            title={cond.certainty === 'provisional' ? `${cond.name} (provisional)` : cond.name}
+            subtitle={`${cond.first.label[0].toUpperCase()}${cond.first.label.slice(1)}${cond.first.on ? `, ${formatDate(cond.first.on)}` : ''}${cond.notes.length > 1 ? ` · noted ${cond.notes.length} times` : ''}`}
+            value={cond.code ?? undefined}
+          />
         ))}
         <Input label="Add a condition" value={condition} onChangeText={setCondition} onSubmitEditing={addCondition} returnKeyType="done" placeholder="Diabetes" />
       </Group>
       {error ? <ErrorText>{error}</ErrorText> : null}
 
-      <Group header="Prescriptions">
-        {[...doctors.entries()].map(([doctor, meds]) => (
-          <Cell key={doctor} title={doctor} subtitle={meds.map((m) => m.name).join(', ')} />
-        ))}
-      </Group>
+      {data.visits.length ? (
+        <Group header="Prescriptions">
+          {data.visits.map((v) => (
+            <Cell
+              key={v.id}
+              title={`${v.doctor ?? 'Doctor not recorded'}${v.clinic ? ` · ${v.clinic}` : ''}`}
+              subtitle={[
+                formatDate(v.prescribed_on ?? v.added_on) + (v.source === 'abha' ? ' · ABHA' : ''),
+                v.reason ? `For ${v.reason}` : null,
+                v.diagnoses.length ? `Diagnosis: ${v.diagnoses.map((d) => (d.certainty === 'provisional' ? `${d.name}?` : d.name)).join(', ')}` : null,
+                v.medications.length ? v.medications.map((m) => m.name).join(', ') : null,
+              ]
+                .filter(Boolean)
+                .join('\n')}
+            />
+          ))}
+        </Group>
+      ) : null}
 
       {data.flags.length ? (
         <Group header="Checked With Doctor">

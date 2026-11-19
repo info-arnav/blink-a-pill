@@ -58,18 +58,6 @@ const findInvite = (code) =>
 const acceptInvite = (tx, code, userId) =>
   tx.query('UPDATE caregiver_invites SET accepted_by = $2, accepted_at = now() WHERE code = $1', [code, userId]);
 
-const conditions = (patientId) =>
-  db.many('SELECT id, name, code, source, created_at FROM conditions WHERE patient_id = $1 ORDER BY created_at', [
-    patientId,
-  ]);
-
-const addCondition = (patientId, name, source, code = null) =>
-  db.one('INSERT INTO conditions (patient_id, name, source, code) VALUES ($1, $2, $3, $4) RETURNING id, name, source', [
-    patientId,
-    name,
-    source,
-    code,
-  ]);
 
 module.exports = {
   listForUser,
@@ -82,6 +70,4 @@ module.exports = {
   createInvite,
   findInvite,
   acceptInvite,
-  conditions,
-  addCondition,
 };

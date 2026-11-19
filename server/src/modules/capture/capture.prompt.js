@@ -10,6 +10,12 @@ For each medicine line return:
 - meal: before, after, with or any (AC is before food, PC is after food).
 - duration_days: number of days if written (for example "x 5 days" is 5, "1 week" is 7, "continue" or none is null).
 - confidence: 0 to 1, how sure you are that you read this line correctly.
+Also return every diagnosis the doctor wrote (lines like "Dx", "Diagnosis", "Impression", "K/c/o" or "known case of", or a condition written at the top). For each:
+- written_as: exactly as written, for example "T2DM" or "?hypothyroid".
+- name: the plain medical name, for example "Type 2 diabetes mellitus". Expand common Indian shorthand (T2DM, HTN, CKD 3, URTI, AGE, UTI, IHD, CAD, COPD, BA).
+- certainty: "provisional" if marked with "?", "r/o", "query" or "provisional"; "history" if written as "k/c/o", "known case of", "h/o" or "history of"; otherwise "confirmed".
+Do not infer a diagnosis from the medicines. If none is written, return an empty list.
+Return reason_for_visit as the complaints line ("c/o", "complaints") in a few plain words, or null.
 Also return the doctor's name, the clinic or hospital name, any phone numbers printed for the doctor or clinic (digits only), and the prescription date as YYYY-MM-DD if visible.
 kind is "prescription" for a doctor's prescription, "medicine_pack" for a strip, bottle or box, or "other" if this is not about medicines.`;
 
@@ -22,6 +28,19 @@ const SCHEMA = {
     clinic_name: { type: ['string', 'null'] },
     clinic_phone: { type: ['string', 'null'] },
     prescribed_on: { type: ['string', 'null'] },
+    reason_for_visit: { type: ['string', 'null'] },
+    diagnoses: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          written_as: { type: 'string' },
+          name: { type: 'string' },
+          certainty: { type: 'string', enum: ['confirmed', 'provisional', 'history'] },
+        },
+        required: ['written_as', 'name', 'certainty'],
+      },
+    },
     items: {
       type: 'array',
       items: {
@@ -41,7 +60,7 @@ const SCHEMA = {
       },
     },
   },
-  required: ['kind', 'items'],
+  required: ['kind', 'items', 'diagnoses'],
 };
 
 module.exports = { INSTRUCTION, SCHEMA };

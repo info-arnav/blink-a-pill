@@ -15,7 +15,7 @@ const joinNames = (list) => {
   return `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}`;
 };
 
-const flag = ({ rule, key = '', meds, severity, title, patient, clinician, reasoning = [], sources = ['general'] }) => {
+const flag = ({ rule, key = '', meds, severity, title, patient, clinician, reasoning = [], sources = [] }) => {
   const ids = [...new Set(meds.map((m) => m.id))].sort();
   return {
     rule,

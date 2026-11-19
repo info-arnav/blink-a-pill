@@ -102,8 +102,12 @@ export type CaptureItem = {
   candidates: Product[];
 };
 
+export type Diagnosis = { written_as: string; name: string; code: string | null; certainty: 'confirmed' | 'provisional' | 'history' };
+
 export type Capture = {
   kind: 'prescription' | 'medicine_pack' | 'other';
+  reason: string | null;
+  diagnoses: Diagnosis[];
   doctor: { name: string; phone: string | null } | null;
   clinic: { name: string; phone: string | null } | null;
   prescribed_on: string | null;
@@ -122,3 +126,26 @@ export type Lab = {
 };
 
 export type Card = { token: string; pin: string; url: string; qr_svg: string; rotated_at: string };
+
+export type Condition = {
+  id: string;
+  key: string | null;
+  name: string;
+  code: string | null;
+  certainty: 'confirmed' | 'provisional' | 'history';
+  first: { source: string; by: string | null; on: string | null; label: string; written_as: string | null };
+  notes: { id: string; source: string; label: string }[];
+};
+
+export type Visit = {
+  id: string;
+  prescribed_on: string | null;
+  added_on: string;
+  reason: string | null;
+  source: 'photo' | 'abha';
+  doctor: string | null;
+  speciality: string | null;
+  clinic: string | null;
+  diagnoses: { id: string; name: string; code: string | null; certainty: string; written_as: string | null }[];
+  medications: { id: string; name: string; status: string }[];
+};

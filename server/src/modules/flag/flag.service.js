@@ -4,6 +4,7 @@ const { evaluate } = require('#modules/rules/rules.engine');
 const drug = require('#modules/drug/drug.service');
 const medicationRepo = require('#modules/medication/medication.repository');
 const labRepo = require('#modules/lab/lab.repository');
+const conditions = require('#modules/condition/condition.service');
 const repo = require('./flag.repository');
 
 const LIVE = ['open', 'asked', 'with_prescriber'];
@@ -78,12 +79,17 @@ const rulesInput = (m) => ({
 });
 
 const context = async (patientId, meds) => {
-  const [egfr, childPugh] = await Promise.all([labRepo.latest(patientId, 'egfr'), labRepo.latest(patientId, 'child_pugh')]);
+  const [egfr, childPugh, notes] = await Promise.all([
+    labRepo.latest(patientId, 'egfr'),
+    labRepo.latest(patientId, 'child_pugh'),
+    conditions.forRules(patientId),
+  ]);
   const keys = meds.flatMap((m) => m.ingredients.map((i) => i.key));
   return {
     egfr: egfr?.value ?? null,
     childPugh: childPugh?.value_text ?? null,
     knownPairs: await drug.knownPairsFor(keys),
+    conditions: notes,
   };
 };
 
