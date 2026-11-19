@@ -14,7 +14,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "link-a-pill uses the camera to photograph your prescriptions and medicine strips.",
         "NSPhotoLibraryUsageDescription": "link-a-pill lets you choose a photo of a prescription from your library."
-      }
+      },
+      "appleTeamId": "KH4XXS55LD"
     },
     "android": {
       "adaptiveIcon": {
