@@ -29,11 +29,11 @@ export default function ForMe() {
   const { signOut } = useSession();
   const c = useColors();
   const [open, setOpen] = useState<string | null>('today');
-  const { data, loading, reload } = useData(() => api<Answers>(`/v1/patients/${patient.id}/me/answers`), [patient.id]);
+  const { data, loading, refreshing, reload, refresh } = useData(() => api<Answers>(`/v1/patients/${patient.id}/me/answers`), [patient.id]);
   const toggle = (id: string) => setOpen(open === id ? null : id);
 
   return (
-    <Screen refreshing={loading && Boolean(data)} onRefresh={reload}>
+    <Screen refreshing={refreshing} onRefresh={refresh}>
       <Group header="Ask">
         {data ? data.questions.map((q) => <Question key={q.id} question={q.question} answer={q.answer} open={open === q.id} onPress={() => toggle(q.id)} />) : <Loading />}
       </Group>

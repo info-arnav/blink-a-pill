@@ -13,12 +13,12 @@ export default function Cabinet() {
   const patient = usePatient();
   const c = useColors();
   const [show, setShow] = useState<'current' | 'past'>('current');
-  const { data, error, loading, reload } = useData(() => api<Medication[]>(`/v1/patients/${patient.id}/medications?all=1`), [patient.id]);
+  const { data, error, loading, refreshing, reload, refresh } = useData(() => api<Medication[]>(`/v1/patients/${patient.id}/medications?all=1`), [patient.id]);
 
   const list = (data ?? []).filter((m) => (show === 'current' ? m.status === 'active' : m.status !== 'active'));
 
   return (
-    <Screen refreshing={loading && Boolean(data)} onRefresh={reload}>
+    <Screen refreshing={refreshing} onRefresh={refresh}>
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <View style={{ flex: 1 }}>
           <Button title="Scan" symbol="camera.fill" onPress={() => router.push('/add-photo')} />

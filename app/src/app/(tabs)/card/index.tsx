@@ -19,7 +19,7 @@ export default function MyCard() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { data, loading, reload } = useData(async () => {
+  const { data, loading, refreshing, reload, refresh } = useData(async () => {
     const base = `/v1/patients/${patient.id}/card`;
     const [card, pharmacies, views] = await Promise.all([api<PatientCard>(base), api<Pharmacy[]>(`${base}/pharmacies`), api<CardView[]>(`${base}/views`)]);
     return { card, pharmacies, views };
@@ -62,7 +62,7 @@ export default function MyCard() {
   if (!data) return <Screen>{loading ? <Loading /> : null}</Screen>;
 
   return (
-    <Screen refreshing={loading} onRefresh={reload}>
+    <Screen refreshing={refreshing} onRefresh={refresh}>
       <Group>
         <View style={{ alignItems: 'center', paddingVertical: 24, paddingHorizontal: 16, gap: 4 }}>
           <Txt style="title2">{patient.full_name}</Txt>

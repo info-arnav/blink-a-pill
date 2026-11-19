@@ -39,7 +39,7 @@ export default function Today() {
   const [error, setError] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState<string[]>([]);
 
-  const { data, loading, reload, setData } = useData(async () => {
+  const { data, loading, refreshing, reload, refresh, setData } = useData(async () => {
     const base = `/v1/patients/${patient.id}`;
     const [day, flags, meds, courses, notes] = await Promise.all([
       api<Day>(`${base}/schedule`),
@@ -85,7 +85,7 @@ export default function Today() {
   const done = data.day.doses.filter((d) => d.status === 'taken').length;
 
   return (
-    <Screen refreshing={loading} onRefresh={reload}>
+    <Screen refreshing={refreshing} onRefresh={refresh}>
       <Txt style="subhead" color={c.secondaryLabel}>
         {patient.role === 'caregiver' ? `${patient.full_name} · ` : ''}
         {new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}

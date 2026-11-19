@@ -25,7 +25,7 @@ export default function Record() {
   const [condition, setCondition] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const { data, loading, reload } = useData(async () => {
+  const { data, loading, refreshing, reload, refresh } = useData(async () => {
     const base = `/v1/patients/${patient.id}`;
     const [labs, conditions, meds, flags] = await Promise.all([
       api<{ latest: Lab[] }>(`${base}/labs`),
@@ -57,7 +57,7 @@ export default function Record() {
   }
 
   return (
-    <Screen refreshing={loading} onRefresh={reload}>
+    <Screen refreshing={refreshing} onRefresh={refresh}>
       <Group header="Results" footer="Values you type are marked as typed by you.">
         {data.labs.map((l) => (
           <Cell
