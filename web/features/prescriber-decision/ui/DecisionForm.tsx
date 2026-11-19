@@ -1,6 +1,7 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useActionState, useEffect, useState } from 'react';
 import { Button, Choice, Field, Notice, Stack } from '@/shared/ui/primitives';
 import { IDLE } from '@/shared/lib/action-state';
 import { submitDecision } from '../api/actions';
@@ -20,6 +21,10 @@ export function DecisionForm({
   medications: Med[];
 }) {
   const [state, action, pending] = useActionState(submitDecision.bind(null, token), IDLE);
+  const router = useRouter();
+  useEffect(() => {
+    if (state.status === 'ok') router.refresh();
+  }, [state.status, router]);
   const [decision, setDecision] = useState<string>('');
   const [message, setMessage] = useState<string>('');
 

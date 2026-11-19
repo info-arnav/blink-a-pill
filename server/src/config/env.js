@@ -15,6 +15,7 @@ const schema = z.object({
   WHATSAPP_PHONE_NUMBER_ID: z.string().min(1),
   WHATSAPP_GRAPH_VERSION: z.string().default('v23.0'),
   WHATSAPP_ALLOWED_RECIPIENTS: z.string().default(''),
+  CORS_ORIGINS: z.string().default(''),
   DRUG_DATA_URL: z
     .url()
     .default(
@@ -33,6 +34,10 @@ if (!parsed.success) {
 const env = parsed.data;
 
 env.allowedRecipients = env.WHATSAPP_ALLOWED_RECIPIENTS.split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
+
+env.corsOrigins = env.CORS_ORIGINS.split(',')
   .map((value) => value.trim())
   .filter(Boolean);
 

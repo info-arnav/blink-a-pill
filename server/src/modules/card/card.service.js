@@ -80,6 +80,12 @@ const revokePharmacy = (patientId, pharmacyId) =>
   db.query('UPDATE pharmacy_access SET revoked_at = now() WHERE patient_id = $1 AND pharmacy_id = $2', [patientId, pharmacyId]);
 
 const recentViews = (patientId) =>
-  db.many('SELECT viewer, viewed_at FROM card_views WHERE patient_id = $1 ORDER BY viewed_at DESC LIMIT 20', [patientId]);
+  db.many(
+    `SELECT CASE WHEN v.pharmacy_id IS NOT NULL THEN ph.name || ' (pharmacy)' WHEN v.viewer = 'clinician' THEN 'A clinician with your PIN' ELSE v.viewer END AS viewer,
+            v.viewed_at
+     FROM card_views v LEFT JOIN pharmacies ph ON ph.id = v.pharmacy_id
+     WHERE v.patient_id = $1 ORDER BY v.viewed_at DESC LIMIT 20`,
+    [patientId],
+  );
 
 module.exports = { issue, getForPatient, regenerate, findByToken, checkPin, logView, cardUrl, approvedPharmacies, revokePharmacy, recentViews };

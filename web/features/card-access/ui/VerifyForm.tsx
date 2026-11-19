@@ -1,6 +1,7 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useActionState } from 'react';
 import { Button, Field, Notice, Stack } from '@/shared/ui/primitives';
 import { IDLE } from '@/shared/lib/action-state';
 import { verifyList } from '../api/actions';
@@ -8,6 +9,10 @@ import styles from './verify.module.css';
 
 export function VerifyForm({ token, medications }: { token: string; medications: { id: string; name: string }[] }) {
   const [state, action, pending] = useActionState(verifyList.bind(null, token), IDLE);
+  const router = useRouter();
+  useEffect(() => {
+    if (state.status === 'ok') router.refresh();
+  }, [state.status, router]);
   if (state.status === 'ok') return <Notice tone="ok">{state.message}</Notice>;
   return (
     <form action={action}>

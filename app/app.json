@@ -1,0 +1,63 @@
+{
+  "expo": {
+    "name": "blink-a-pill",
+    "slug": "blink-a-pill",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "blinkapill",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "tech.unlocalhost.blinkapill",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "blink-a-pill uses the camera to photograph your prescriptions and medicine strips.",
+        "NSPhotoLibraryUsageDescription": "blink-a-pill lets you choose a photo of a prescription from your library."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "tech.unlocalhost.blinkapill"
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0F6B5C",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 76
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "blink-a-pill uses the camera to photograph your prescriptions and medicine strips.",
+          "photosPermission": "blink-a-pill lets you choose a photo of a prescription from your library."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#0F6B5C"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

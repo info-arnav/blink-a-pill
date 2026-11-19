@@ -68,6 +68,7 @@ async function Content({ params }: { params: Promise<{ token: string }> }) {
             {f.by}
             {f.registration ? `, Reg. ${f.registration}` : ''} · {formatDateTime(f.at)}
           </div>
+          <FlagActions token={token} flagId={f.id} answered />
         </Card>
       ))}
       <Card title="Not sure about one medicine?">

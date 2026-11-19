@@ -1,12 +1,17 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useActionState } from 'react';
 import { Button, Choice, Field, Notice, Stack } from '@/shared/ui/primitives';
 import { IDLE } from '@/shared/lib/action-state';
 import { submitReception } from '../api/actions';
 
 export function ReceptionForm({ token, doctor }: { token: string; doctor: string }) {
   const [state, action, pending] = useActionState(submitReception.bind(null, token), IDLE);
+  const router = useRouter();
+  useEffect(() => {
+    if (state.status === 'ok') router.refresh();
+  }, [state.status, router]);
   if (state.status === 'ok') return <Notice tone="ok">{state.message}</Notice>;
   return (
     <form action={action}>

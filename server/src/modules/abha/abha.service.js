@@ -45,8 +45,14 @@ const importBundle = async (patientId, actor, bundle) => {
   const resources = bundle.entry.map((e) => e.resource);
   const person = await patient.get(patientId);
   const summary = { conditions: 0, labs: 0, medications: 0 };
+  const known = {
+    conditions: new Set((await db.many('SELECT lower(name) AS n FROM conditions WHERE patient_id = $1', [patientId])).map((r) => r.n)),
+    labs: new Set((await db.many('SELECT kind || measured_on AS k FROM lab_values WHERE patient_id = $1', [patientId])).map((r) => r.k)),
+    products: new Set((await db.many(`SELECT product_id FROM medications WHERE patient_id = $1 AND status = 'active'`, [patientId])).map((r) => r.product_id)),
+  };
 
   for (const c of resources.filter((r) => r.resourceType === 'Condition')) {
+    if (known.conditions.has(c.code.text.toLowerCase())) continue;
     await patientRepo.addCondition(patientId, c.code.text, 'abha', c.code.coding?.[0]?.code ?? null);
     summary.conditions += 1;
   }
@@ -55,6 +61,7 @@ const importBundle = async (patientId, actor, bundle) => {
     const kind = LOINC[o.code.coding?.[0]?.code];
     if (!kind || o.valueQuantity?.value == null) continue;
     const measuredOn = o.effectiveDateTime.slice(0, 10);
+    if (known.labs.has(`${kind}${measuredOn}`)) continue;
     await labRepo.insert({ patient_id: patientId, kind, value: o.valueQuantity.value, unit: o.valueQuantity.unit, measured_on: measuredOn, source: 'abha' });
     summary.labs += 1;
     if (kind === 'creatinine') {
@@ -64,6 +71,7 @@ const importBundle = async (patientId, actor, bundle) => {
 
   for (const m of resources.filter((r) => r.resourceType === 'MedicationRequest' && r.status === 'active')) {
     const [match] = await drug.searchProducts(m.medicationCodeableConcept.text, 1);
+    if (match && known.products.has(match.id)) continue;
     const requester = m.requester?.display ?? null;
     const speciality = requester?.match(/\(([^)]+)\)/)?.[1] ?? null;
     const perDay = m.dosageInstruction?.[0]?.timing?.repeat?.frequency ?? 1;
