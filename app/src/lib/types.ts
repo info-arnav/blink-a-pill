@@ -63,7 +63,15 @@ export type Flag = {
   status_label: string;
   is_open: boolean;
   decision: { status: string; text: string | null; by: string | null; registration: string | null; at: string } | null;
-  medications?: { id: string; name: string; status: string }[];
+  medications?: {
+    id: string;
+    name: string;
+    status: string;
+    is_new: boolean;
+    added_at: string;
+    prescriber: { id: string; name: string; phone: string | null } | null;
+    clinic: { name: string; reception_phone: string | null } | null;
+  }[];
   events?: { id: string; actor_name: string; actor_ref: string | null; action: string; note: string | null; created_at: string }[];
   created_at: string;
 };

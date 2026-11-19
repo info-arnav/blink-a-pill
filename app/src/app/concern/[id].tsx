@@ -4,7 +4,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { api, errorMessage } from '@/lib/api';
 import { usePatient } from '@/lib/session';
 import { useData } from '@/lib/use-data';
-import type { Flag, Medication } from '@/lib/types';
+import type { Flag } from '@/lib/types';
 import { Banner, Button, Cell, ErrorText, Group, Icon, Input, Loading, Screen, Txt } from '@/ui/kit';
 import { severityColor, useColors } from '@/ui/theme';
 
@@ -20,22 +20,30 @@ export default function Concern() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<string | null>(null);
+  const [chosen, setChosen] = useState<string | null>(null);
 
-  const { data, reload } = useData(async () => {
-    const [flag, meds] = await Promise.all([api<Flag>(`/v1/patients/${patient.id}/flags/${id}`), api<Medication[]>(`/v1/patients/${patient.id}/medications?all=1`)]);
-    return { flag, meds };
-  }, [patient.id, id]);
+  const { data, reload } = useData(() => api<Flag>(`/v1/patients/${patient.id}/flags/${id}`), [patient.id, id]);
+
+  const doctors = (data?.medications ?? [])
+    .filter((m) => m.prescriber)
+    .sort((a, b) => Number(b.is_new) - Number(a.is_new) || new Date(b.added_at).getTime() - new Date(a.added_at).getTime())
+    .filter((m, i, all) => all.findIndex((x) => x.prescriber!.id === m.prescriber!.id) === i);
+
+  const pick = (medId: string) => {
+    const m = doctors.find((d) => d.id === medId);
+    if (!m?.prescriber) return;
+    setChosen(medId);
+    setDoctor({ name: m.prescriber.name, phone: m.prescriber.phone?.slice(-10) ?? '' });
+    setClinic({ name: m.clinic?.name ?? '', phone: m.clinic?.reception_phone?.slice(-10) ?? '' });
+  };
 
   useEffect(() => {
-    if (!data) return;
-    const involved = data.meds.filter((m) => data.flag.medication_ids.includes(m.id)).sort((a, b) => (b.prescribed_on ?? '').localeCompare(a.prescribed_on ?? ''));
-    const newest = involved.find((m) => m.prescriber?.phone) ?? involved.find((m) => m.prescriber) ?? null;
-    if (newest?.prescriber) setDoctor((d) => (d.name ? d : { name: newest.prescriber!.name, phone: newest.prescriber!.phone?.slice(-10) ?? '' }));
-    if (newest?.clinic) setClinic((cl) => (cl.name ? cl : { name: newest.clinic!.name, phone: newest.clinic!.reception_phone?.slice(-10) ?? '' }));
+    if (!chosen && doctors[0]) pick(doctors[0].id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
   if (!data) return <Loading />;
-  const { flag } = data;
+  const flag = data;
   const tone = severityColor(c, flag.severity);
 
   const ask = async () => {
@@ -88,6 +96,19 @@ export default function Concern() {
 
       {asking ? (
         <View style={{ gap: 16 }}>
+          {doctors.length > 1 ? (
+            <Group header="Which Doctor?" footer="Usually the doctor who wrote the new prescription.">
+              {doctors.map((m) => (
+                <Cell
+                  key={m.id}
+                  title={m.prescriber!.name}
+                  subtitle={`Prescribed ${m.name}${m.is_new ? ' · new' : ''}`}
+                  onPress={() => pick(m.id)}
+                  trailing={chosen === m.id ? <Icon name="checkmark" size={17} color={c.tint} fallback="✓" /> : undefined}
+                />
+              ))}
+            </Group>
+          ) : null}
           <Group header="Ask My Doctor" footer="The message has no medicine names. They see details after opening the link.">
             <Input label="Doctor" value={doctor.name} onChangeText={(name) => setDoctor((d) => ({ ...d, name }))} />
             <Input label="Doctor’s WhatsApp" value={doctor.phone} onChangeText={(phone) => setDoctor((d) => ({ ...d, phone }))} keyboardType="phone-pad" />
@@ -102,7 +123,12 @@ export default function Concern() {
 
       <Group header="Medicines">
         {(flag.medications ?? []).map((m) => (
-          <Cell key={m.id} title={m.name} value={m.status !== 'active' ? 'Stopped' : undefined} />
+          <Cell
+            key={m.id}
+            title={m.name}
+            subtitle={[m.prescriber?.name ?? 'Doctor not recorded', m.is_new ? 'new' : null].filter(Boolean).join(' · ')}
+            value={m.status !== 'active' ? 'Stopped' : undefined}
+          />
         ))}
       </Group>
 

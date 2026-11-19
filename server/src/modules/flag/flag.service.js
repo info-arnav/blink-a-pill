@@ -42,6 +42,7 @@ const shape = (f) => ({
   reasoning: f.reasoning,
   sources: f.sources,
   medication_ids: f.medication_ids,
+  trigger_medication_id: f.trigger_medication_id,
   rules_version: f.rules_version,
   status: f.status,
   status_label: STATUS_LABEL[f.status],
@@ -66,6 +67,7 @@ const shape = (f) => ({
 
 const rulesInput = (m) => ({
   id: m.id,
+  created_at: m.created_at,
   display_name: m.display_name,
   ingredients: m.ingredients,
   dose_amount: m.dose_amount,
@@ -85,9 +87,15 @@ const context = async (patientId, meds) => {
   };
 };
 
+const newestOf = (meds, ids) =>
+  meds
+    .filter((m) => ids.includes(m.id))
+    .sort((a, b) => new Date(b.created_at ?? 0) - new Date(a.created_at ?? 0))[0]?.id ?? null;
+
 const evaluateFor = async (patientId, extraMeds = []) => {
   const meds = [...(await medicationRepo.listForPatient(patientId)).map(rulesInput), ...extraMeds];
-  return evaluate(meds, await context(patientId, meds));
+  const found = evaluate(meds, await context(patientId, meds));
+  return found.map((f) => ({ ...f, trigger_medication_id: newestOf(meds, f.medication_ids) }));
 };
 
 const actorOf = (actor) =>
@@ -103,7 +111,7 @@ const recompute = async (patientId, { actor, reason } = {}) => {
   for (const f of found) {
     const prior = existing.get(f.fingerprint);
     if (!prior) {
-      const created = await repo.insert(patientId, f, RULES_VERSION);
+      const created = await repo.insert(patientId, f, RULES_VERSION, f.trigger_medication_id);
       await repo.addEvent(created.id, { actor_type: 'system', actor_name: 'link-a-pill rules', action: 'raised', note: `Rules version ${RULES_VERSION}` });
       if (f.severity < 3) await repo.notify(patientId, 'flag', f.title, 'Tap to see why, and ask your doctor.', created.id);
       raised.push({ ...f, id: created.id });
@@ -139,7 +147,17 @@ const get = async (patientId, flagId) => {
 const withHistory = async (patientId, flagId) => {
   const flag = await get(patientId, flagId);
   const events = await repo.events([flag.id]);
-  const meds = (await medicationRepo.findManyByIds(flag.medication_ids)).map((m) => ({ id: m.id, name: m.display_name, status: m.status }));
+  const meds = (await medicationRepo.findManyByIds(flag.medication_ids))
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .map((m) => ({
+      id: m.id,
+      name: m.display_name,
+      status: m.status,
+      added_at: m.created_at,
+      is_new: m.id === flag.trigger_medication_id,
+      prescriber: m.prescriber_id ? { id: m.prescriber_id, name: m.prescriber_name, phone: m.prescriber_phone } : null,
+      clinic: m.clinic_id ? { name: m.clinic_name, reception_phone: m.clinic_phone } : null,
+    }));
   return { ...shape(flag), medications: meds, events };
 };
 

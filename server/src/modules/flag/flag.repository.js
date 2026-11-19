@@ -1,7 +1,7 @@
 const db = require('#lib/db');
 
 const COLUMNS = `f.id, f.patient_id, f.rule, f.fingerprint, f.severity, f.title, f.patient_text, f.clinician_text, f.reasoning,
-  f.sources, f.medication_ids, f.rules_version, f.status, f.reception_result, f.decision_message, f.decided_at, f.decision_note, f.hold_medication_id, hm.display_name AS hold_medication_name,
+  f.sources, f.medication_ids, f.rules_version, f.status, f.reception_result, f.decision_message, f.decided_at, f.decision_note, f.hold_medication_id, hm.display_name AS hold_medication_name, f.trigger_medication_id,
   f.created_at, f.updated_at, pr.name AS decided_by_name, pr.registration_number AS decided_by_registration,
   pr.registration_council AS decided_by_council`;
 
@@ -18,11 +18,11 @@ const findById = (id) => db.one(`SELECT ${COLUMNS} ${FROM} WHERE f.id = $1`, [id
 
 const allForRecompute = (patientId) => db.many('SELECT id, fingerprint, status FROM flags WHERE patient_id = $1', [patientId]);
 
-const insert = (patientId, f, version) =>
+const insert = (patientId, f, version, triggerId) =>
   db.one(
-    `INSERT INTO flags (patient_id, rule, fingerprint, severity, title, patient_text, clinician_text, reasoning, sources, medication_ids, rules_version)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
-    [patientId, f.rule, f.fingerprint, f.severity, f.title, f.patient_text, f.clinician_text, JSON.stringify(f.reasoning), JSON.stringify(f.sources), f.medication_ids, version],
+    `INSERT INTO flags (patient_id, rule, fingerprint, severity, title, patient_text, clinician_text, reasoning, sources, medication_ids, rules_version, trigger_medication_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
+    [patientId, f.rule, f.fingerprint, f.severity, f.title, f.patient_text, f.clinician_text, JSON.stringify(f.reasoning), JSON.stringify(f.sources), f.medication_ids, version, triggerId],
   );
 
 const refresh = (id, f, status) =>

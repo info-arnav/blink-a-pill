@@ -11,10 +11,12 @@ import { DecisionForm } from '@/features/prescriber-decision';
 
 export const metadata: Metadata = { title: 'Decision needed', ...NOINDEX };
 
+type ConcernMed = { id: string; name: string; status: string; is_new: boolean; prescriber: { id: string; name: string } | null };
+
 type View = {
-  doctor: { name: string | null; speciality: string | null; needs_registration: boolean };
+  doctor: { id: string; name: string | null; speciality: string | null; needs_registration: boolean };
   answered: boolean;
-  concern: Flag & { medications: { id: string; name: string; status: string }[] };
+  concern: Omit<Flag, 'medications'> & { medications: ConcernMed[] };
   record: PatientRecord;
 };
 
@@ -24,6 +26,11 @@ async function Content({ params }: { params: Promise<{ token: string }> }) {
   if (!view.ok) return <Callout tone="danger" title={view.message} />;
   const { doctor, concern, record, answered } = view.data;
   const decided = answered || Boolean(concern.decision);
+  const mine = concern.medications.filter((m) => m.prescriber?.id === doctor.id);
+  const others = concern.medications.filter((m) => m.prescriber?.id !== doctor.id);
+  const context = mine.length
+    ? `You prescribed ${mine.map((m) => m.name).join(' and ')}${others.length ? `. It overlaps with ${others.map((m) => `${m.name} (${m.prescriber?.name ?? 'prescriber not recorded'})`).join(' and ')}` : ''}.`
+    : `None of these medicines are recorded as prescribed by you: ${concern.medications.map((m) => `${m.name} (${m.prescriber?.name ?? 'prescriber not recorded'})`).join(', ')}.`;
   return (
     <>
       <PageTitle
@@ -32,6 +39,7 @@ async function Content({ params }: { params: Promise<{ token: string }> }) {
         description="Is this combination intended?"
       />
       <PatientFacts patient={record.patient} conditions={record.conditions} />
+      <Callout tone={mine.length ? 'info' : 'warning'} title={context} />
       <Concern flag={concern} medicationNames={concern.medications.map((m) => m.name)} />
       {!decided ? (
         <Section title="Your decision">

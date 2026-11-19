@@ -109,7 +109,7 @@ const prescriberView = async (token, meta) => {
   const rec = await record.build(link.patient_id, { includeEvents: true });
   const flagRow = await flag.withHistory(null, link.flag_id);
   return {
-    doctor: { name: link.prescriber_name, speciality: link.prescriber_speciality, needs_registration: !link.registration_number },
+    doctor: { id: link.prescriber_id, name: link.prescriber_name, speciality: link.prescriber_speciality, needs_registration: !link.registration_number },
     answered: Boolean(link.used_at),
     concern: flagRow,
     record: { ...rec, flags: rec.flags.filter((f) => f.id !== flagRow.id) },
