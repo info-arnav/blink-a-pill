@@ -1,0 +1,16 @@
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.next/
+out/
+dist/
+build/
+.expo/
+ios/
+android/
+data/raw/
+infra/secrets/
+*.tmp.js

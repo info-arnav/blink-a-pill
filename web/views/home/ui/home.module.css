@@ -1,0 +1,20 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.text {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.link {
+  align-self: flex-start;
+  background: var(--brand);
+  color: var(--on-brand);
+  padding: 12px 18px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  text-decoration: none;
+}

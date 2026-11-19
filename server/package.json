@@ -1,0 +1,37 @@
+{
+  "name": "@blink/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "imports": {
+    "#config/*": "./src/config/*.js",
+    "#lib/*": "./src/lib/*.js",
+    "#db/*": "./src/db/*.js",
+    "#modules/*": "./src/modules/*.js",
+    "#middleware/*": "./src/middleware/*.js",
+    "#clients/*": "./src/clients/*.js",
+    "#constants/*": "./src/constants/*.js"
+  },
+  "scripts": {
+    "dev": "node --watch --env-file-if-exists=../.env --env-file-if-exists=.env.local src/server.js",
+    "start": "node src/server.js",
+    "migrate": "node --env-file-if-exists=../.env --env-file-if-exists=.env.local src/db/migrate.js",
+    "import:drugs": "node --env-file-if-exists=../.env --env-file-if-exists=.env.local src/db/import-drugs.js"
+  },
+  "dependencies": {
+    "@google/genai": "^3.6.1",
+    "csv-parse": "^7.0.3",
+    "express": "^5.3.0",
+    "helmet": "^8.3.0",
+    "ioredis": "^5.11.1",
+    "jose": "^6.2.18",
+    "multer": "^2.5.0",
+    "pg": "^8.23.1",
+    "qrcode": "^1.5.4",
+    "zod": "^4.6.7"
+  }
+}

@@ -1,0 +1,157 @@
+.patient {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+}
+
+.patientName {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.patientMeta {
+  color: var(--ink-soft);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.med {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.med:first-child {
+  border-top: none;
+}
+
+.medName {
+  font-weight: 650;
+}
+
+.medFlagged {
+  box-shadow: inset 3px 0 0 var(--sev1);
+  padding-left: 12px;
+}
+
+.medMeta {
+  grid-column: 1 / -1;
+  color: var(--ink-soft);
+  font-size: 15px;
+}
+
+.medSource {
+  grid-column: 1 / -1;
+  color: var(--ink-faint);
+  font-size: 14px;
+}
+
+.composition {
+  color: var(--ink-faint);
+  font-size: 14px;
+}
+
+.reasoning {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--ink-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sources {
+  font-size: 14px;
+  color: var(--ink-faint);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-left: 2px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.event {
+  padding-left: 14px;
+  position: relative;
+  font-size: 15px;
+}
+
+.event::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 7px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+.eventWhen {
+  color: var(--ink-faint);
+  font-size: 13px;
+}
+
+.labs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.lab {
+  background: var(--surface-muted);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.labValue {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.labLabel {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.decision {
+  border-radius: var(--radius-sm);
+  background: var(--ok-tint);
+  padding: 12px 14px;
+}
+
+.muted {
+  color: var(--ink-faint);
+  font-size: 14px;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.details summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--brand);
+}
