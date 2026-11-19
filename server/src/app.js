@@ -9,6 +9,7 @@ const app = express();
 
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
+app.set('etag', false);
 
 app.get('/ready', (_req, res) => res.status(200).json({ ok: true }));
 
@@ -16,6 +17,10 @@ app.use(helmet());
 if (env.corsOrigins.length) app.use(cors({ origin: env.corsOrigins, maxAge: 600 }));
 app.use(express.json({ limit: '200kb' }));
 app.use(requestContext);
+app.use((_req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
 
 const scoped = [requireUser, requirePatientAccess];
 
